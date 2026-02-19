@@ -56,13 +56,39 @@ forge doctor                      → Local diagnostics only (no API)
 - **License format:** `FRG-XXXX-XXXX-XXXX`
 - **API base URL:** `https://api.reumbra.dev`
 
+## Development
+
+- `pnpm dev -- <command>` — run CLI in dev mode (tsx)
+- `pnpm build` — TypeScript → dist/
+- `pnpm test` — vitest (30 tests, 6 suites)
+- `pnpm check` — Biome lint + format
+
+## Code Style
+
+- **Biome 2.4** — double quotes, sorted imports, 2-space indent, 100 char line width
+- No non-null assertions (`!`) — use `as T` cast in tests
+- Plugin name normalization: shorthand "core" → "forge-core" (prefix `forge-` if missing)
+
+## Testing
+
+- Tests in `tests/` mirror `src/` structure
+- Config tests use `vi.mock()` to override paths → tmpdir isolation
+- ZIP tests build real zip buffers with `buildZipBuffer()` helper
+- vitest gotcha: `await import()` inside non-async callbacks fails at esbuild transform
+
+## Gotchas
+
+- ZIP extraction uses `createInflateRaw()` not `createUnzip()` — ZIP method 8 is raw deflate without zlib header
+- Biome schema version must match installed CLI version — run `pnpm biome migrate --write` after upgrades
+
 ## Implementation Phases
 
 | Phase | Scope |
 |-------|-------|
-| 1. MVP | activate + install + basic error handling |
-| 3. Polish | update, doctor, status, expiry handling |
-| 4. Rename | Align naming across ecosystem |
+| 1. MVP | activate + install + basic error handling ✅ |
+| 2. Testing | Unit tests, lint, CI readiness ✅ |
+| 3. Integration | Test against real API, end-to-end flows |
+| 4. Publish | npm publish, CLI global install, versioning |
 
 ## Security Notes
 

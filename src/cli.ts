@@ -1,13 +1,22 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { activate } from "./commands/activate.js";
+import { showConfig } from "./commands/config.js";
 import { deactivate } from "./commands/deactivate.js";
 import { doctor } from "./commands/doctor.js";
 import { install } from "./commands/install.js";
 import { list } from "./commands/list.js";
 import { status } from "./commands/status.js";
+import { uninstall } from "./commands/uninstall.js";
 import { update } from "./commands/update.js";
 import { log } from "./lib/logger.js";
 
-const VERSION = "0.1.0";
+function getVersion(): string {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8"));
+  return pkg.version;
+}
 
 const HELP = `
 \x1b[1mForge\x1b[0m — Plugin manager for Claude Code
@@ -20,15 +29,18 @@ const HELP = `
   activate <license-key>     Bind license to this machine
   deactivate                 Unbind this machine (free slot)
   install <plugin> [version] Download and install a plugin
+  uninstall <plugin>         Remove an installed plugin
   update [plugin]            Update all or specific plugin
   list                       Show available plugins
   status                     License info: plan, expiry, devices
+  config                     Show current configuration
   doctor                     Run diagnostics
 
 \x1b[1mExamples:\x1b[0m
   forge activate FRG-XXXX-XXXX-XXXX
   forge install core
   forge install forge-product@1.2.0
+  forge uninstall core
   forge update
   forge list
   forge status
@@ -48,7 +60,7 @@ async function main() {
   }
 
   if (command === "--version" || command === "-v") {
-    console.log(`forge v${VERSION}`);
+    console.log(`forge v${getVersion()}`);
     return;
   }
 
@@ -90,6 +102,17 @@ async function main() {
         break;
       }
 
+      case "uninstall":
+      case "remove": {
+        const plugin = args[1];
+        if (!plugin) {
+          log.error("Usage: forge uninstall <plugin>");
+          process.exit(1);
+        }
+        uninstall(plugin);
+        break;
+      }
+
       case "update":
         await update(args[1]);
         break;
@@ -103,9 +126,15 @@ async function main() {
         await status();
         break;
 
-      case "doctor":
-        doctor();
+      case "config":
+        showConfig();
         break;
+
+      case "doctor": {
+        const result = await doctor();
+        if (result.issues > 0) process.exit(1);
+        break;
+      }
 
       default:
         log.error(`Unknown command: ${command}`);
