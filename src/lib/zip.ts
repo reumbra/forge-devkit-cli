@@ -2,7 +2,7 @@ import { createWriteStream, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { createUnzip } from "node:zlib";
+import { createInflateRaw } from "node:zlib";
 
 /**
  * Extract a zip buffer to a directory.
@@ -35,7 +35,7 @@ export async function extractZip(zipBuffer: Buffer, destDir: string): Promise<vo
       // Deflated
       const data = zipBuffer.subarray(entry.dataOffset, entry.dataOffset + entry.compressedSize);
       const readable = Readable.from(data);
-      const inflate = createUnzip();
+      const inflate = createInflateRaw();
       await pipeline(readable, inflate, createWriteStream(fullPath));
     }
   }
