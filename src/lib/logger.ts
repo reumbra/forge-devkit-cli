@@ -1,10 +1,4 @@
-const reset = "\x1b[0m";
-const bold = "\x1b[1m";
-const dim = "\x1b[2m";
-const red = "\x1b[31m";
-const green = "\x1b[32m";
-const yellow = "\x1b[33m";
-const cyan = "\x1b[36m";
+import { bold, cyan, dim, green, red, reset, visualLength, yellow } from "./styles.js";
 
 export const log = {
   info(msg: string) {
@@ -35,11 +29,17 @@ export const log = {
     console.log(msg);
   },
 
+  /** Simple key-value table (no borders). Use ui.table() for bordered tables. */
   table(rows: string[][]) {
     if (rows.length === 0) return;
-    const widths = rows[0].map((_, i) => Math.max(...rows.map((r) => (r[i] ?? "").length)));
+    const widths = rows[0].map((_, i) => Math.max(...rows.map((r) => visualLength(r[i] ?? ""))));
     for (const row of rows) {
-      const line = row.map((cell, i) => cell.padEnd(widths[i])).join("  ");
+      const line = row
+        .map((cell, i) => {
+          const pad = widths[i] - visualLength(cell);
+          return cell + " ".repeat(Math.max(0, pad));
+        })
+        .join("  ");
       console.log(`  ${line}`);
     }
   },

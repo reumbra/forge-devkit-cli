@@ -1,6 +1,8 @@
 import { ApiError, apiRequest } from "../lib/api.js";
 import { loadConfig, saveConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
+import { bold, dim, green, reset } from "../lib/styles.js";
+import { box, createSpinner, statusBadge } from "../lib/ui.js";
 import type { ActivateResponse } from "../types.js";
 
 export async function activate(licenseKey: string): Promise<void> {
@@ -12,7 +14,7 @@ export async function activate(licenseKey: string): Promise<void> {
   const config = loadConfig();
   config.license_key = licenseKey;
 
-  log.step(`Activating license on this machine...`);
+  const spinner = createSpinner("Activating license...");
 
   try {
     const result = await apiRequest<ActivateResponse>(config, {
@@ -26,14 +28,24 @@ export async function activate(licenseKey: string): Promise<void> {
 
     saveConfig(config);
 
-    log.success("License activated!");
-    log.plain("");
-    log.table([
-      ["Plan:", result.license.plan],
-      ["Expires:", new Date(result.license.expires_at).toLocaleDateString()],
-      ["Devices:", `${result.license.machines_used}/${result.license.max_machines}`],
-    ]);
+    const expires = new Date(result.license.expires_at);
+    spinner.stop(`${green}✓${reset} License activated!`);
+
+    console.log(
+      box(
+        [
+          `${bold}Plan:${reset}     ${result.license.plan}`,
+          `${bold}Expires:${reset}  ${expires.toLocaleDateString()}`,
+          `${bold}Machines:${reset} ${result.license.machines_used}/${result.license.max_machines}`,
+          `${bold}Status:${reset}   ${statusBadge("active")}`,
+        ],
+        { title: "License", borderColor: dim },
+      ),
+    );
+
+    log.info(`${dim}Run \`forge install <plugin>\` to get started.${reset}`);
   } catch (err) {
+    spinner.stop();
     if (err instanceof ApiError) {
       if (err.code === "MACHINE_LIMIT") {
         log.error("All device slots are used.");

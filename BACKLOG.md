@@ -33,14 +33,38 @@
 - [x] update: 6 tests (single vs all, shorthand, no license, not installed)
 - [x] logger: 9 tests (all methods + table formatting)
 
-## Phase 3: Integration
+## Phase 3: UX & Interactive Mode
+
+### Pretty Output
+- [ ] Box-рамки для секций (license status, plugin list) — unicode box drawing
+- [ ] Spinners при загрузке (download, API calls) — `\r` + ANSI перезапись строки
+- [ ] Progress bar для скачивания ZIP (bytes received / total)
+- [ ] Цветные бейджи статусов: `✓ active` / `⚠ expiring` / `✗ expired`
+- [ ] Красивые таблицы с разделителями и выравниванием колонок
+- [ ] Gradient/bold заголовки команд (Forge branding)
+
+### Interactive Dashboard (`forge` без аргументов)
+- [ ] При запуске без аргументов — интерактивный dashboard вместо help
+- [ ] Верхняя панель: лицензия (план, expiry, machine slots), API status
+- [ ] Список установленных плагинов с версиями и статусом обновлений
+- [ ] Меню действий: Install / Update / Uninstall / Status / Doctor / Deactivate
+- [ ] Навигация стрелками + Enter (readline raw mode, без внешних deps)
+- [ ] Подсветка выбранного пункта, instant feedback
+
+### Interactive Flows
+- [ ] `forge install` без аргумента — показать список доступных плагинов, выбрать стрелками
+- [ ] `forge uninstall` без аргумента — показать установленные, выбрать для удаления
+- [ ] `forge activate` — если ключ не передан, запросить ввод интерактивно
+- [ ] Confirmation prompts перед деструктивными действиями (uninstall, deactivate)
+
+## Phase 4: Integration
 
 - [ ] End-to-end tests against running API (Docker)
 - [ ] `forge activate` → `forge install` → `forge list` → `forge uninstall` flow
 - [ ] Error scenarios: expired license, machine limit, network failure
 - [ ] Rate limiting handling (retry with backoff)
 
-## Phase 4: Publish
+## Phase 5: Publish
 
 - [ ] GitHub Actions CI (lint + test on push)
 - [ ] npm publish workflow

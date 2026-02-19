@@ -11,6 +11,8 @@ import { status } from "./commands/status.js";
 import { uninstall } from "./commands/uninstall.js";
 import { update } from "./commands/update.js";
 import { log } from "./lib/logger.js";
+import { bold, dim, reset } from "./lib/styles.js";
+import { banner } from "./lib/ui.js";
 
 function getVersion(): string {
   const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,44 +20,42 @@ function getVersion(): string {
   return pkg.version;
 }
 
-const HELP = `
-\x1b[1mForge\x1b[0m — Plugin manager for Claude Code
-\x1b[2mhttps://reumbra.dev/forge\x1b[0m
+function showHelp(): void {
+  console.log(`
+${banner()}
 
-\x1b[1mUsage:\x1b[0m
+${bold}Usage:${reset}
   forge <command> [options]
 
-\x1b[1mCommands:\x1b[0m
-  activate <license-key>     Bind license to this machine
-  deactivate                 Unbind this machine (free slot)
-  install <plugin> [version] Download and install a plugin
-  uninstall <plugin>         Remove an installed plugin
-  update [plugin]            Update all or specific plugin
-  list                       Show available plugins
-  status                     License info: plan, expiry, devices
-  config                     Show current configuration
-  doctor                     Run diagnostics
+${bold}Commands:${reset}
+  ${bold}activate${reset} <license-key>     Bind license to this machine
+  ${bold}deactivate${reset}                 Unbind this machine (free slot)
+  ${bold}install${reset} <plugin> [version] Download and install a plugin
+  ${bold}uninstall${reset} <plugin>         Remove an installed plugin
+  ${bold}update${reset} [plugin]            Update all or specific plugin
+  ${bold}list${reset}                       Show available plugins
+  ${bold}status${reset}                     License info: plan, expiry, devices
+  ${bold}config${reset}                     Show current configuration
+  ${bold}doctor${reset}                     Run diagnostics
 
-\x1b[1mExamples:\x1b[0m
-  forge activate FRG-XXXX-XXXX-XXXX
-  forge install core
-  forge install forge-product@1.2.0
-  forge uninstall core
-  forge update
-  forge list
-  forge status
+${bold}Examples:${reset}
+  ${dim}$${reset} forge activate FRG-XXXX-XXXX-XXXX
+  ${dim}$${reset} forge install core
+  ${dim}$${reset} forge install forge-product@1.2.0
+  ${dim}$${reset} forge list
 
-\x1b[1mOptions:\x1b[0m
+${bold}Options:${reset}
   --help, -h     Show this help
   --version, -v  Show version
-`;
+`);
+}
 
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
 
   if (!command || command === "--help" || command === "-h") {
-    console.log(HELP);
+    showHelp();
     return;
   }
 

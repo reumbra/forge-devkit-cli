@@ -1,6 +1,7 @@
 import { ApiError, apiRequest } from "../lib/api.js";
 import { loadConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
+import { badge, banner, table } from "../lib/ui.js";
 import type { ListResponse } from "../types.js";
 
 export async function list(): Promise<void> {
@@ -17,25 +18,28 @@ export async function list(): Promise<void> {
       path: "/plugins/list",
     });
 
-    log.header("Available plugins");
-
-    const rows: string[][] = [];
-    for (const plugin of result.plugins) {
-      const installed = config.installed_plugins[plugin.name];
-      const status = installed
-        ? installed.version === plugin.current_version
-          ? "\x1b[32m✓ up to date\x1b[0m"
-          : `\x1b[33m↑ ${installed.version} → ${plugin.current_version}\x1b[0m`
-        : "\x1b[2mnot installed\x1b[0m";
-
-      rows.push([plugin.name, `v${plugin.current_version}`, status, plugin.description]);
-    }
-
-    log.table(rows);
+    console.log(`\n${banner()}\n`);
 
     if (result.plugins.length === 0) {
       log.info("No plugins available for your plan.");
+      return;
     }
+
+    const rows = result.plugins.map((plugin) => {
+      const installed = config.installed_plugins[plugin.name];
+      let status: string;
+      if (installed) {
+        status =
+          installed.version === plugin.current_version
+            ? badge("✓ up to date", "success")
+            : badge(`↑ ${installed.version} → ${plugin.current_version}`, "warning");
+      } else {
+        status = badge("not installed", "neutral");
+      }
+      return [plugin.name, `v${plugin.current_version}`, status, plugin.description];
+    });
+
+    console.log(table(rows, { header: ["Plugin", "Version", "Status", "Description"] }));
   } catch (err) {
     if (err instanceof ApiError) {
       log.error(err.message);

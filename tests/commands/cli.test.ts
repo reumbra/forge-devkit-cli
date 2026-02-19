@@ -82,7 +82,7 @@ describe("CLI dispatch", () => {
 
   it("doctor runs and checks Node.js", () => {
     const { output } = run("doctor");
-    expect(output).toContain("Forge Doctor");
+    expect(output).toContain("Diagnostics");
     expect(output).toContain("Node.js");
   });
 

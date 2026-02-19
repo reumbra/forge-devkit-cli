@@ -4,6 +4,8 @@ import { ApiError, apiRequest, downloadFile } from "../lib/api.js";
 import { loadConfig, saveConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
 import { CACHE_DIR, claudePluginDir } from "../lib/paths.js";
+import { bold, dim, green, reset } from "../lib/styles.js";
+import { createSpinner } from "../lib/ui.js";
 import { extractZip } from "../lib/zip.js";
 import type { DownloadResponse } from "../types.js";
 
@@ -17,8 +19,9 @@ export async function install(pluginName: string, version?: string): Promise<voi
 
   // Normalize plugin name (allow shorthand: "core" → "forge-core")
   const fullName = pluginName.startsWith("forge-") ? pluginName : `forge-${pluginName}`;
+  const versionLabel = version ? `@${version}` : "";
 
-  log.step(`Requesting download for ${fullName}${version ? `@${version}` : ""}...`);
+  const spinner = createSpinner(`Requesting ${bold}${fullName}${reset}${versionLabel}...`);
 
   try {
     const result = await apiRequest<DownloadResponse>(config, {
@@ -31,21 +34,20 @@ export async function install(pluginName: string, version?: string): Promise<voi
     });
 
     // Download the zip
-    log.step(`Downloading ${fullName}@${result.version}...`);
+    spinner.update(`Downloading ${bold}${fullName}@${result.version}${reset}...`);
     const zipBuffer = await downloadFile(result.url);
 
     // Extract to cache
+    spinner.update("Extracting...");
     const cacheDir = join(CACHE_DIR, `${fullName}@${result.version}`);
     if (existsSync(cacheDir)) {
       rmSync(cacheDir, { recursive: true });
     }
     mkdirSync(cacheDir, { recursive: true });
-
-    log.step("Extracting...");
     await extractZip(zipBuffer, cacheDir);
 
     // Link into Claude Code plugin directory
-    log.step("Installing into Claude Code...");
+    spinner.update("Installing into Claude Code...");
     linkPlugin(fullName, cacheDir);
 
     // Update config
@@ -55,9 +57,10 @@ export async function install(pluginName: string, version?: string): Promise<voi
     };
     saveConfig(config);
 
-    log.success(`${fullName}@${result.version} installed!`);
-    log.info("Run the plugin setup command in your project to get started.");
+    spinner.stop(`${green}✓${reset} ${bold}${fullName}@${result.version}${reset} installed!`);
+    log.info(`${dim}Run the plugin setup command in your project to get started.${reset}`);
   } catch (err) {
+    spinner.stop();
     if (err instanceof ApiError) {
       if (err.code === "PLUGIN_NOT_IN_PLAN") {
         log.error(`${fullName} is not available on your plan.`);
