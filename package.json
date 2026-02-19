@@ -1,0 +1,46 @@
+{
+  "name": "@reumbra/forge",
+  "version": "0.1.0",
+  "description": "CLI for installing and managing Forge plugins for Claude Code",
+  "type": "module",
+  "bin": {
+    "forge": "./bin/forge.js"
+  },
+  "files": [
+    "bin/",
+    "dist/"
+  ],
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc",
+    "check": "biome check --write",
+    "lint": "biome lint",
+    "format": "biome format --write",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "claude-code",
+    "forge",
+    "plugins",
+    "cli"
+  ],
+  "author": "Reumbra",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reumbra/forge-devkit-cli"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.24.0",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.2",
+    "@types/node": "^25.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

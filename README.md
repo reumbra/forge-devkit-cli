@@ -113,14 +113,41 @@ Activate flow:
 
 ## Tech Stack
 
-- Node.js CLI
-- npm package: `@reumbra/forge` (public, scoped)
-- Zero runtime dependencies (goal)
+- **Runtime:** Node.js >=20
+- **Package:** `@reumbra/forge` (public, scoped npm)
+- **Zero runtime dependencies** — uses only Node.js built-ins
+- **Build:** TypeScript (strict), Biome (lint + format)
+- **Tests:** Vitest
 
-## Implementation Roadmap
+## Development
 
-| Phase | Scope |
-|-------|-------|
-| 1. MVP | activate + install + basic error handling |
-| 3. Polish | update, doctor, status, expiry handling |
-| 4. Rename | Align with forge-* naming across ecosystem |
+```bash
+pnpm install          # Install dev dependencies
+pnpm dev -- doctor    # Run any command in dev mode (via tsx)
+pnpm build            # Compile TypeScript → dist/
+pnpm check            # Lint + format (Biome)
+pnpm test             # Run tests
+```
+
+### Project Structure
+
+```
+src/
+├── cli.ts                  # Entry point, arg parser, command dispatch
+├── types.ts                # Shared types (config, API responses)
+├── commands/
+│   ├── activate.ts         # forge activate <key>
+│   ├── deactivate.ts       # forge deactivate
+│   ├── install.ts          # forge install <plugin> [version]
+│   ├── update.ts           # forge update [plugin]
+│   ├── list.ts             # forge list
+│   ├── status.ts           # forge status
+│   └── doctor.ts           # forge doctor (local only)
+└── lib/
+    ├── api.ts              # HTTP client (fetch), ApiError
+    ├── config.ts           # ~/.forge/config.json management
+    ├── logger.ts           # CLI output (colors, tables, icons)
+    ├── machine-id.ts       # SHA256-based device fingerprint
+    ├── paths.ts            # ~/.forge/ path constants
+    └── zip.ts              # ZIP extraction (Node.js built-ins)
+```
