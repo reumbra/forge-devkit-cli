@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Command } from "commander";
 import { activate } from "./commands/activate.js";
 import { showConfig } from "./commands/config.js";
 import { deactivate } from "./commands/deactivate.js";
@@ -20,127 +21,115 @@ function getVersion(): string {
   return pkg.version;
 }
 
-function showHelp(): void {
-  console.log(`
-${banner()}
+export function createProgram(): Command {
+  const program = new Command();
 
-${bold}Usage:${reset}
-  forge <command> [options]
+  program
+    .name("forge")
+    .version(`forge v${getVersion()}`, "-v, --version")
+    .addHelpText("before", `\n${banner()}\n`)
+    .addHelpText(
+      "after",
+      `\n${bold}Examples:${reset}\n  ${dim}$${reset} forge activate FRG-XXXX-XXXX-XXXX\n  ${dim}$${reset} forge install core\n  ${dim}$${reset} forge install forge-product@1.2.0\n  ${dim}$${reset} forge list\n`,
+    )
+    .usage("[command] [options]")
+    .showHelpAfterError('Run "forge --help" for available commands.');
 
-${bold}Commands:${reset}
-  ${bold}activate${reset} <license-key>     Bind license to this machine
-  ${bold}deactivate${reset}                 Unbind this machine (free slot)
-  ${bold}install${reset} <plugin> [version] Download and install a plugin
-  ${bold}uninstall${reset} <plugin>         Remove an installed plugin
-  ${bold}update${reset} [plugin]            Update all or specific plugin
-  ${bold}list${reset}                       Show available plugins
-  ${bold}status${reset}                     License info: plan, expiry, devices
-  ${bold}config${reset}                     Show current configuration
-  ${bold}doctor${reset}                     Run diagnostics
+  // Catch-all: no command → help, unknown command → error
+  program.argument("[command]").action((cmd?: string) => {
+    if (!cmd) {
+      program.help();
+    } else {
+      log.error(`Unknown command: ${cmd}`);
+      log.info('Run "forge --help" for available commands.');
+      process.exit(1);
+    }
+  });
 
-${bold}Examples:${reset}
-  ${dim}$${reset} forge activate FRG-XXXX-XXXX-XXXX
-  ${dim}$${reset} forge install core
-  ${dim}$${reset} forge install forge-product@1.2.0
-  ${dim}$${reset} forge list
+  program
+    .command("activate")
+    .description("Bind license to this machine")
+    .argument("<license-key>", "Forge license key (FRG-XXXX-XXXX-XXXX)")
+    .action(async (key: string) => {
+      await activate(key);
+    });
 
-${bold}Options:${reset}
-  --help, -h     Show this help
-  --version, -v  Show version
-`);
+  program
+    .command("deactivate")
+    .description("Unbind this machine (free a slot)")
+    .action(async () => {
+      await deactivate();
+    });
+
+  program
+    .command("install")
+    .description("Download and install a plugin")
+    .argument("<plugin>", "Plugin name (e.g. core, forge-product@1.2.0)")
+    .argument("[version]", "Specific version")
+    .action(async (plugin: string, version?: string) => {
+      if (plugin.includes("@")) {
+        const [name, ver] = plugin.split("@");
+        await install(name, ver);
+      } else {
+        await install(plugin, version);
+      }
+    });
+
+  program
+    .command("uninstall")
+    .alias("remove")
+    .description("Remove an installed plugin")
+    .argument("<plugin>", "Plugin name to remove")
+    .action((plugin: string) => {
+      uninstall(plugin);
+    });
+
+  program
+    .command("update")
+    .description("Update all or specific plugin")
+    .argument("[plugin]", "Plugin to update (omit for all)")
+    .action(async (plugin?: string) => {
+      await update(plugin);
+    });
+
+  program
+    .command("list")
+    .alias("ls")
+    .description("Show available plugins")
+    .action(async () => {
+      await list();
+    });
+
+  program
+    .command("status")
+    .description("License info: plan, expiry, devices")
+    .action(async () => {
+      await status();
+    });
+
+  program
+    .command("config")
+    .description("Show current configuration")
+    .action(() => {
+      showConfig();
+    });
+
+  program
+    .command("doctor")
+    .description("Run diagnostics")
+    .action(async () => {
+      const result = await doctor();
+      if (result.issues > 0) process.exit(1);
+    });
+
+  return program;
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const command = args[0];
-
-  if (!command || command === "--help" || command === "-h") {
-    showHelp();
-    return;
-  }
-
-  if (command === "--version" || command === "-v") {
-    console.log(`forge v${getVersion()}`);
-    return;
-  }
+  const program = createProgram();
 
   try {
-    switch (command) {
-      case "activate": {
-        const key = args[1];
-        if (!key) {
-          log.error("Usage: forge activate <license-key>");
-          process.exit(1);
-        }
-        await activate(key);
-        break;
-      }
-
-      case "deactivate":
-        await deactivate();
-        break;
-
-      case "install": {
-        let plugin = args[1];
-        let version: string | undefined;
-
-        if (!plugin) {
-          log.error("Usage: forge install <plugin> [version]");
-          process.exit(1);
-        }
-
-        // Support plugin@version syntax
-        if (plugin.includes("@")) {
-          const parts = plugin.split("@");
-          plugin = parts[0];
-          version = parts[1];
-        } else {
-          version = args[2];
-        }
-
-        await install(plugin, version);
-        break;
-      }
-
-      case "uninstall":
-      case "remove": {
-        const plugin = args[1];
-        if (!plugin) {
-          log.error("Usage: forge uninstall <plugin>");
-          process.exit(1);
-        }
-        uninstall(plugin);
-        break;
-      }
-
-      case "update":
-        await update(args[1]);
-        break;
-
-      case "list":
-      case "ls":
-        await list();
-        break;
-
-      case "status":
-        await status();
-        break;
-
-      case "config":
-        showConfig();
-        break;
-
-      case "doctor": {
-        const result = await doctor();
-        if (result.issues > 0) process.exit(1);
-        break;
-      }
-
-      default:
-        log.error(`Unknown command: ${command}`);
-        log.info("Run `forge --help` for available commands.");
-        process.exit(1);
-    }
+    await program.parseAsync();
   } catch (err) {
     if (err instanceof Error) {
       if (err.message.includes("fetch failed") || err.message.includes("ECONNREFUSED")) {

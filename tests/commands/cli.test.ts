@@ -25,26 +25,28 @@ function run(...args: string[]): {
   }
 }
 
-describe("CLI dispatch", () => {
+describe("CLI dispatch (Commander)", () => {
   it("shows help with --help", () => {
     const { stdout, exitCode } = run("--help");
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("forge <command>");
+    expect(stdout).toContain("Usage: forge");
     expect(stdout).toContain("activate");
     expect(stdout).toContain("uninstall");
     expect(stdout).toContain("config");
+    expect(stdout).toContain("doctor");
+    expect(stdout).toContain("Examples:");
   });
 
   it("shows help with -h", () => {
     const { stdout, exitCode } = run("-h");
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("forge <command>");
+    expect(stdout).toContain("Usage: forge");
   });
 
   it("shows help with no arguments", () => {
     const { stdout, exitCode } = run();
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("forge <command>");
+    expect(stdout).toContain("Usage: forge");
   });
 
   it("shows version with --version", () => {
@@ -65,19 +67,22 @@ describe("CLI dispatch", () => {
     expect(output).toContain("Unknown command: foobar");
   });
 
-  it("exits 1 for activate without key", () => {
-    const { exitCode } = run("activate");
+  it("exits 1 for activate without key (commander required arg)", () => {
+    const { output, exitCode } = run("activate");
     expect(exitCode).toBe(1);
+    expect(output).toContain("missing required argument");
   });
 
-  it("exits 1 for install without plugin", () => {
-    const { exitCode } = run("install");
+  it("exits 1 for install without plugin (commander required arg)", () => {
+    const { output, exitCode } = run("install");
     expect(exitCode).toBe(1);
+    expect(output).toContain("missing required argument");
   });
 
-  it("exits 1 for uninstall without plugin", () => {
-    const { exitCode } = run("uninstall");
+  it("exits 1 for uninstall without plugin (commander required arg)", () => {
+    const { output, exitCode } = run("uninstall");
     expect(exitCode).toBe(1);
+    expect(output).toContain("missing required argument");
   });
 
   it("doctor runs and checks Node.js", () => {
@@ -87,14 +92,20 @@ describe("CLI dispatch", () => {
   });
 
   it("accepts 'ls' as alias for 'list'", () => {
-    // Will fail with "No license key" but that means routing worked
     const { output, exitCode } = run("ls");
     expect(exitCode).toBe(1);
     expect(output).toContain("No license key");
   });
 
   it("accepts 'remove' as alias for 'uninstall'", () => {
-    const { exitCode } = run("remove");
+    const { output, exitCode } = run("remove");
     expect(exitCode).toBe(1);
+    expect(output).toContain("missing required argument");
+  });
+
+  it("shows aliases in help (ls, remove)", () => {
+    const { stdout } = run("--help");
+    expect(stdout).toContain("list|ls");
+    expect(stdout).toContain("uninstall|remove");
   });
 });

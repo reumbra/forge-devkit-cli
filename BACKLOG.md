@@ -35,27 +35,35 @@
 
 ## Phase 3: UX & Interactive Mode
 
-### Pretty Output
-- [ ] Box-рамки для секций (license status, plugin list) — unicode box drawing
-- [ ] Spinners при загрузке (download, API calls) — `\r` + ANSI перезапись строки
-- [ ] Progress bar для скачивания ZIP (bytes received / total)
-- [ ] Цветные бейджи статусов: `✓ active` / `⚠ expiring` / `✗ expired`
-- [ ] Красивые таблицы с разделителями и выравниванием колонок
-- [ ] Gradient/bold заголовки команд (Forge branding)
+### Pretty Output ✅
+- [x] Box-рамки для секций (license status, plugin list) — unicode box drawing
+- [x] Spinners при загрузке (download, API calls) — `\r` + ANSI перезапись строки
+- [x] Progress bar для скачивания ZIP (bytes received / total)
+- [x] Цветные бейджи статусов: `✓ active` / `⚠ expiring` / `✗ expired`
+- [x] Красивые таблицы с разделителями и выравниванием колонок
+- [x] Gradient/bold заголовки команд (Forge branding)
+
+### CLI Framework Migration
+- [ ] Добавить `commander` — роутинг команд, auto-help, subcommands, флаги
+- [ ] Добавить `@clack/prompts` — интерактивные промпты, спиннеры, select, confirm
+- [ ] Переписать `cli.ts` с commander: программы, субкоманды, опции
+- [ ] Заменить ручные спиннеры на `@clack/prompts` spinner
+- [ ] Обновить тесты CLI dispatch под новый роутинг
+- [ ] Обновить CLAUDE.md с новыми зависимостями
 
 ### Interactive Dashboard (`forge` без аргументов)
 - [ ] При запуске без аргументов — интерактивный dashboard вместо help
 - [ ] Верхняя панель: лицензия (план, expiry, machine slots), API status
 - [ ] Список установленных плагинов с версиями и статусом обновлений
 - [ ] Меню действий: Install / Update / Uninstall / Status / Doctor / Deactivate
-- [ ] Навигация стрелками + Enter (readline raw mode, без внешних deps)
+- [ ] Навигация стрелками + Enter (@clack/prompts select)
 - [ ] Подсветка выбранного пункта, instant feedback
 
 ### Interactive Flows
-- [ ] `forge install` без аргумента — показать список доступных плагинов, выбрать стрелками
-- [ ] `forge uninstall` без аргумента — показать установленные, выбрать для удаления
-- [ ] `forge activate` — если ключ не передан, запросить ввод интерактивно
-- [ ] Confirmation prompts перед деструктивными действиями (uninstall, deactivate)
+- [ ] `forge install` без аргумента — @clack select из доступных плагинов
+- [ ] `forge uninstall` без аргумента — @clack select из установленных
+- [ ] `forge activate` — если ключ не передан, @clack text input
+- [ ] Confirmation prompts перед деструктивными действиями (@clack confirm)
 
 ## Phase 4: Integration
 
