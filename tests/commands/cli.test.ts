@@ -25,7 +25,8 @@ function run(...args: string[]): {
   }
 }
 
-describe("CLI dispatch (Commander)", () => {
+describe("CLI dispatch (Commander + interactive)", () => {
+  // Help & version
   it("shows help with --help", () => {
     const { stdout, exitCode } = run("--help");
     expect(exitCode).toBe(0);
@@ -43,7 +44,8 @@ describe("CLI dispatch (Commander)", () => {
     expect(stdout).toContain("Usage: forge");
   });
 
-  it("shows help with no arguments", () => {
+  it("shows help with no arguments (non-TTY fallback)", () => {
+    // Non-TTY (piped execFileSync) → shows help instead of dashboard
     const { stdout, exitCode } = run();
     expect(exitCode).toBe(0);
     expect(stdout).toContain("Usage: forge");
@@ -61,46 +63,50 @@ describe("CLI dispatch (Commander)", () => {
     expect(stdout).toMatch(/^forge v\d+\.\d+\.\d+/);
   });
 
+  // Unknown command
   it("exits 1 for unknown command", () => {
     const { output, exitCode } = run("foobar");
     expect(exitCode).toBe(1);
     expect(output).toContain("Unknown command: foobar");
   });
 
-  it("exits 1 for activate without key (commander required arg)", () => {
+  // Missing args (non-TTY → error with usage hint)
+  it("exits 1 for activate without key (non-TTY)", () => {
     const { output, exitCode } = run("activate");
     expect(exitCode).toBe(1);
-    expect(output).toContain("missing required argument");
+    expect(output).toContain("Usage: forge activate");
   });
 
-  it("exits 1 for install without plugin (commander required arg)", () => {
+  it("exits 1 for install without plugin (non-TTY)", () => {
     const { output, exitCode } = run("install");
     expect(exitCode).toBe(1);
-    expect(output).toContain("missing required argument");
+    expect(output).toContain("Usage: forge install");
   });
 
-  it("exits 1 for uninstall without plugin (commander required arg)", () => {
+  it("exits 1 for uninstall without plugin (non-TTY)", () => {
     const { output, exitCode } = run("uninstall");
     expect(exitCode).toBe(1);
-    expect(output).toContain("missing required argument");
+    expect(output).toContain("Usage: forge uninstall");
   });
 
+  // Commands that work
   it("doctor runs and checks Node.js", () => {
     const { output } = run("doctor");
     expect(output).toContain("Diagnostics");
     expect(output).toContain("Node.js");
   });
 
+  // Aliases
   it("accepts 'ls' as alias for 'list'", () => {
     const { output, exitCode } = run("ls");
     expect(exitCode).toBe(1);
     expect(output).toContain("No license key");
   });
 
-  it("accepts 'remove' as alias for 'uninstall'", () => {
+  it("accepts 'remove' as alias for 'uninstall' (non-TTY → error)", () => {
     const { output, exitCode } = run("remove");
     expect(exitCode).toBe(1);
-    expect(output).toContain("missing required argument");
+    expect(output).toContain("Usage: forge uninstall");
   });
 
   it("shows aliases in help (ls, remove)", () => {

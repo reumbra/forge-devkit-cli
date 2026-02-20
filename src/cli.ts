@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as p from "@clack/prompts";
 import { Command } from "commander";
 import { activate } from "./commands/activate.js";
 import { showConfig } from "./commands/config.js";
+import { dashboard } from "./commands/dashboard.js";
 import { deactivate } from "./commands/deactivate.js";
 import { doctor } from "./commands/doctor.js";
 import { install } from "./commands/install.js";
@@ -11,6 +13,7 @@ import { list } from "./commands/list.js";
 import { status } from "./commands/status.js";
 import { uninstall } from "./commands/uninstall.js";
 import { update } from "./commands/update.js";
+import { loadConfig } from "./lib/config.js";
 import { log } from "./lib/logger.js";
 import { bold, dim, reset } from "./lib/styles.js";
 import { banner } from "./lib/ui.js";
@@ -35,10 +38,14 @@ export function createProgram(): Command {
     .usage("[command] [options]")
     .showHelpAfterError('Run "forge --help" for available commands.');
 
-  // Catch-all: no command → help, unknown command → error
-  program.argument("[command]").action((cmd?: string) => {
+  // Catch-all: no command → interactive dashboard (TTY) or help (non-TTY), unknown → error
+  program.argument("[command]").action(async (cmd?: string) => {
     if (!cmd) {
-      program.help();
+      if (process.stdin.isTTY) {
+        await dashboard();
+      } else {
+        program.help();
+      }
     } else {
       log.error(`Unknown command: ${cmd}`);
       log.info('Run "forge --help" for available commands.');
@@ -49,8 +56,28 @@ export function createProgram(): Command {
   program
     .command("activate")
     .description("Bind license to this machine")
-    .argument("<license-key>", "Forge license key (FRG-XXXX-XXXX-XXXX)")
-    .action(async (key: string) => {
+    .argument("[license-key]", "Forge license key (FRG-XXXX-XXXX-XXXX)")
+    .action(async (key?: string) => {
+      if (!key) {
+        if (!process.stdin.isTTY) {
+          log.error("Usage: forge activate <license-key>");
+          process.exit(1);
+        }
+        const input = await p.text({
+          message: "Enter your license key:",
+          placeholder: "FRG-XXXX-XXXX-XXXX",
+          validate: (v) => {
+            if (!v || !/^FRG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(v)) {
+              return "Invalid format. Expected: FRG-XXXX-XXXX-XXXX";
+            }
+          },
+        });
+        if (p.isCancel(input)) {
+          p.cancel("Activation cancelled.");
+          process.exit(0);
+        }
+        key = input;
+      }
       await activate(key);
     });
 
@@ -58,15 +85,43 @@ export function createProgram(): Command {
     .command("deactivate")
     .description("Unbind this machine (free a slot)")
     .action(async () => {
+      if (process.stdin.isTTY) {
+        const confirmed = await p.confirm({
+          message: "Deactivate this machine? This will free up a machine slot.",
+        });
+        if (p.isCancel(confirmed) || !confirmed) {
+          p.cancel("Deactivation cancelled.");
+          return;
+        }
+      }
       await deactivate();
     });
 
   program
     .command("install")
     .description("Download and install a plugin")
-    .argument("<plugin>", "Plugin name (e.g. core, forge-product@1.2.0)")
+    .argument("[plugin]", "Plugin name (e.g. core, forge-product@1.2.0)")
     .argument("[version]", "Specific version")
-    .action(async (plugin: string, version?: string) => {
+    .action(async (plugin?: string, version?: string) => {
+      if (!plugin) {
+        if (!process.stdin.isTTY) {
+          log.error("Usage: forge install <plugin> [version]");
+          process.exit(1);
+        }
+        const input = await p.text({
+          message: "Plugin name to install:",
+          placeholder: "e.g. core, forge-product@1.2.0",
+          validate: (v) => {
+            if (!v?.trim()) return "Plugin name is required";
+          },
+        });
+        if (p.isCancel(input)) {
+          p.cancel("Installation cancelled.");
+          process.exit(0);
+        }
+        plugin = input.trim();
+      }
+
       if (plugin.includes("@")) {
         const [name, ver] = plugin.split("@");
         await install(name, ver);
@@ -79,8 +134,47 @@ export function createProgram(): Command {
     .command("uninstall")
     .alias("remove")
     .description("Remove an installed plugin")
-    .argument("<plugin>", "Plugin name to remove")
-    .action((plugin: string) => {
+    .argument("[plugin]", "Plugin name to remove")
+    .action(async (plugin?: string) => {
+      if (!plugin) {
+        if (!process.stdin.isTTY) {
+          log.error("Usage: forge uninstall <plugin>");
+          process.exit(1);
+        }
+
+        const config = loadConfig();
+        const installed = Object.keys(config.installed_plugins);
+
+        if (installed.length === 0) {
+          log.warn("No plugins installed.");
+          process.exit(0);
+        }
+
+        const selected = await p.select({
+          message: "Select plugin to uninstall:",
+          options: installed.map((name) => ({
+            value: name,
+            label: name,
+            hint: `v${config.installed_plugins[name].version}`,
+          })),
+        });
+        if (p.isCancel(selected)) {
+          p.cancel("Uninstall cancelled.");
+          process.exit(0);
+        }
+        plugin = selected;
+      }
+
+      if (process.stdin.isTTY) {
+        const confirmed = await p.confirm({
+          message: `Uninstall ${bold}${plugin}${reset}?`,
+        });
+        if (p.isCancel(confirmed) || !confirmed) {
+          p.cancel("Uninstall cancelled.");
+          return;
+        }
+      }
+
       uninstall(plugin);
     });
 
