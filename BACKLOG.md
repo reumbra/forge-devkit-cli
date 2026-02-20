@@ -43,27 +43,27 @@
 - [x] Красивые таблицы с разделителями и выравниванием колонок
 - [x] Gradient/bold заголовки команд (Forge branding)
 
-### CLI Framework Migration
-- [ ] Добавить `commander` — роутинг команд, auto-help, subcommands, флаги
-- [ ] Добавить `@clack/prompts` — интерактивные промпты, спиннеры, select, confirm
-- [ ] Переписать `cli.ts` с commander: программы, субкоманды, опции
-- [ ] Заменить ручные спиннеры на `@clack/prompts` spinner
-- [ ] Обновить тесты CLI dispatch под новый роутинг
-- [ ] Обновить CLAUDE.md с новыми зависимостями
+### CLI Framework Migration ✅
+- [x] Добавить `commander` — роутинг команд, auto-help, subcommands, флаги
+- [x] Добавить `@clack/prompts` — интерактивные промпты, спиннеры, select, confirm
+- [x] Переписать `cli.ts` с commander: программы, субкоманды, опции
+- [x] Обновить тесты CLI dispatch под новый роутинг (77 tests)
 
-### Interactive Dashboard (`forge` без аргументов)
-- [ ] При запуске без аргументов — интерактивный dashboard вместо help
-- [ ] Верхняя панель: лицензия (план, expiry, machine slots), API status
-- [ ] Список установленных плагинов с версиями и статусом обновлений
-- [ ] Меню действий: Install / Update / Uninstall / Status / Doctor / Deactivate
-- [ ] Навигация стрелками + Enter (@clack/prompts select)
-- [ ] Подсветка выбранного пункта, instant feedback
+### Interactive Dashboard ✅
+- [x] При запуске без аргументов (TTY) — интерактивный dashboard
+- [x] Статус-строка: лицензия (masked key), количество плагинов
+- [x] Меню действий: Status / Browse / Install / Update / Uninstall / Doctor / Config / Deactivate / Exit
+- [x] Навигация стрелками + Enter (@clack/prompts select)
+- [x] Dashboard loop — после действия возвращается к меню
+- [x] Non-TTY fallback → показывает help (backward compatible)
 
-### Interactive Flows
-- [ ] `forge install` без аргумента — @clack select из доступных плагинов
-- [ ] `forge uninstall` без аргумента — @clack select из установленных
-- [ ] `forge activate` — если ключ не передан, @clack text input
-- [ ] Confirmation prompts перед деструктивными действиями (@clack confirm)
+### Interactive Flows ✅
+- [x] `forge activate` без ключа (TTY) → text input с FRG-key validation
+- [x] `forge install` без плагина (TTY) → text input для имени плагина
+- [x] `forge uninstall` без плагина (TTY) → select из установленных плагинов
+- [x] `forge deactivate` (TTY) → confirmation prompt
+- [x] `forge uninstall <plugin>` (TTY) → confirmation prompt
+- [x] Non-TTY fallback → Usage error messages (scripts/CI compatible)
 
 ## Phase 4: Integration
 

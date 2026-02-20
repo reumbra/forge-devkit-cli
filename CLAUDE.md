@@ -51,7 +51,7 @@ forge doctor                      → Local diagnostics only (no API)
 
 ## Tech Decisions
 
-- **Zero runtime dependencies** — this is a design goal, use Node.js built-ins
+- **Minimal runtime dependencies** — Commander (routing), @clack/prompts (interactive UI), plus Node.js built-ins
 - **Node.js CLI** distributed as public scoped npm package
 - **License format:** `FRG-XXXX-XXXX-XXXX`
 - **API base URL:** `https://api.reumbra.dev`
@@ -60,8 +60,9 @@ forge doctor                      → Local diagnostics only (no API)
 
 - `pnpm dev -- <command>` — run CLI in dev mode (tsx)
 - `pnpm build` — TypeScript → dist/
-- `pnpm test` — vitest (30 tests, 6 suites)
+- `pnpm test` — vitest (77 tests, 12 suites)
 - `pnpm check` — Biome lint + format
+- `node bin/forge.js` — run built CLI directly
 
 ## Code Style
 
@@ -81,14 +82,25 @@ forge doctor                      → Local diagnostics only (no API)
 - ZIP extraction uses `createInflateRaw()` not `createUnzip()` — ZIP method 8 is raw deflate without zlib header
 - Biome schema version must match installed CLI version — run `pnpm biome migrate --write` after upgrades
 
+## CLI Architecture
+
+- **Commander.js** — command routing, auto-help, subcommands, aliases (ls, remove)
+- **@clack/prompts** — interactive mode: select, text, confirm, cancel handling
+- **TTY detection** — `process.stdin.isTTY` gates interactive vs non-interactive behavior
+  - TTY: dashboard, prompts, confirmations
+  - Non-TTY (pipes/CI): help text, error messages, no interactivity
+- **Dashboard loop** — `forge` (no args, TTY) → status line + action menu → execute → repeat
+- **styles.ts + ui.ts** — zero-dep ANSI styling and box/table/badge/spinner components
+
 ## Implementation Phases
 
 | Phase | Scope |
 |-------|-------|
 | 1. MVP | activate + install + basic error handling ✅ |
-| 2. Testing | Unit tests, lint, CI readiness ✅ |
-| 3. Integration | Test against real API, end-to-end flows |
-| 4. Publish | npm publish, CLI global install, versioning |
+| 2. Commands & Tests | uninstall, config, enhanced doctor, 77 tests ✅ |
+| 3. UX & Interactive | Commander, @clack/prompts, dashboard, pretty output ✅ |
+| 4. Integration | Test against real API, end-to-end flows |
+| 5. Publish | npm publish, CLI global install, versioning |
 
 ## Security Notes
 
