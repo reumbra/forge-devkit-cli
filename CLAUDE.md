@@ -62,7 +62,7 @@ forge doctor                      → Local diagnostics only (no API)
 
 - `pnpm dev -- <command>` — run CLI in dev mode (tsx)
 - `pnpm build` — TypeScript → dist/
-- `pnpm test` — vitest (77 tests, 12 suites)
+- `pnpm test` — vitest (112 tests, 17 suites)
 - `pnpm check` — Biome lint + format
 - `node bin/forge.js` — run built CLI directly
 

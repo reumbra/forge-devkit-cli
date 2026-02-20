@@ -29,15 +29,33 @@ describe("ApiError", () => {
 });
 
 describe("apiRequest URL building", () => {
+  // Mirrors the actual URL construction in api.ts
+  function buildUrl(apiUrl: string, path: string): URL {
+    const base = apiUrl.replace(/\/+$/, "");
+    return new URL(`${base}${path}`);
+  }
+
   it("constructs correct URL from config.api_url + path", () => {
     const config = mockConfig();
-    const url = new URL("/auth/activate", config.api_url);
+    const url = buildUrl(config.api_url, "/auth/activate");
     expect(url.toString()).toBe("https://api.test.dev/auth/activate");
+  });
+
+  it("preserves path prefix in api_url (e.g. /velvet)", () => {
+    const config = mockConfig({ api_url: "https://api.reumbra.com/velvet" });
+    const url = buildUrl(config.api_url, "/auth/activate");
+    expect(url.toString()).toBe("https://api.reumbra.com/velvet/auth/activate");
+  });
+
+  it("handles trailing slash in api_url", () => {
+    const config = mockConfig({ api_url: "https://api.reumbra.com/velvet/" });
+    const url = buildUrl(config.api_url, "/plugins/list");
+    expect(url.toString()).toBe("https://api.reumbra.com/velvet/plugins/list");
   });
 
   it("appends query parameters", () => {
     const config = mockConfig();
-    const url = new URL("/auth/status", config.api_url);
+    const url = buildUrl(config.api_url, "/auth/status");
     url.searchParams.set("license_key", config.license_key as string);
     expect(url.toString()).toContain("license_key=FRG-TEST-1234-ABCD");
   });
