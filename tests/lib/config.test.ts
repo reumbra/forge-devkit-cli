@@ -31,7 +31,7 @@ describe("config", () => {
       const config = loadConfig();
       expect(config.license_key).toBeNull();
       expect(config.machine_id).toMatch(/^[0-9a-f]{32}$/);
-      expect(config.api_url).toBe("https://api.reumbra.dev");
+      expect(config.api_url).toBe("https://api.reumbra.com/velvet");
       expect(config.installed_plugins).toEqual({});
     });
 

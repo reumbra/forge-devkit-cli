@@ -36,7 +36,8 @@ export async function list(): Promise<void> {
       } else {
         status = badge("not installed", "neutral");
       }
-      return [plugin.name, `v${plugin.current_version}`, status, plugin.description];
+      const version = plugin.current_version ? `v${plugin.current_version}` : "—";
+      return [plugin.name, version, status, plugin.description];
     });
 
     console.log(table(rows, { header: ["Plugin", "Version", "Status", "Description"] }));

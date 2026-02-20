@@ -4,7 +4,7 @@ import type { ForgeConfig } from "../types.js";
 import { getMachineId } from "./machine-id.js";
 import { CONFIG_PATH, FORGE_DIR } from "./paths.js";
 
-const DEFAULT_API_URL = "https://api.reumbra.dev";
+const DEFAULT_API_URL = "https://api.reumbra.com/velvet";
 
 function defaultConfig(): ForgeConfig {
   return {

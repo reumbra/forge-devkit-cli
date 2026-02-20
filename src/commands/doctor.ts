@@ -112,13 +112,15 @@ export async function doctor(): Promise<DoctorResult> {
   }
 
   // 7. API connectivity
-  const apiUrl = hasConfig ? config.api_url : "https://api.reumbra.dev";
+  const apiUrl = hasConfig
+    ? config.api_url
+    : (process.env.FORGE_API_URL ?? "https://api.reumbra.com/velvet");
   let apiOk = false;
   try {
-    const res = await fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(25000) });
     apiOk = res.ok;
   } catch {
-    // unreachable
+    // unreachable or timeout (Lambda cold starts can take ~20s)
   }
   results.push({
     label: "API connectivity",

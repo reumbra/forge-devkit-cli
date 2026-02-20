@@ -67,7 +67,7 @@ export function createProgram(): Command {
           message: "Enter your license key:",
           placeholder: "FRG-XXXX-XXXX-XXXX",
           validate: (v) => {
-            if (!v || !/^FRG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(v)) {
+            if (!v || !/^FRG-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(v)) {
               return "Invalid format. Expected: FRG-XXXX-XXXX-XXXX";
             }
           },

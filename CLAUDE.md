@@ -54,7 +54,9 @@ forge doctor                      → Local diagnostics only (no API)
 - **Minimal runtime dependencies** — Commander (routing), @clack/prompts (interactive UI), plus Node.js built-ins
 - **Node.js CLI** distributed as public scoped npm package
 - **License format:** `FRG-XXXX-XXXX-XXXX`
-- **API base URL:** `https://api.reumbra.dev`
+- **API base URL (prod):** `https://api.reumbra.com/velvet`
+- **API base URL (dev):** `https://dev.api.reumbra.com/velvet`
+- **API URL override:** `FORGE_API_URL` env var
 
 ## Development
 

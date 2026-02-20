@@ -20,7 +20,8 @@ interface RequestOptions {
 }
 
 export async function apiRequest<T>(config: ForgeConfig, opts: RequestOptions): Promise<T> {
-  const url = new URL(opts.path, config.api_url);
+  const base = config.api_url.replace(/\/+$/, "");
+  const url = new URL(`${base}${opts.path}`);
 
   if (opts.query) {
     for (const [k, v] of Object.entries(opts.query)) {
