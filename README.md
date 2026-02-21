@@ -19,7 +19,7 @@ Forge DevKit is a commercial product by [Reumbra](https://reumbra.dev) — AI-po
 │                                                                  │
 │  forge-devkit-api                    PRIVATE                     │
 │  └─ License validation, plugin delivery, webhooks                │
-│  └─ Node.js (Fastify) + PostgreSQL (Supabase) + Cloudflare R2   │
+│  └─ Node.js (Fastify) + PostgreSQL (Supabase) + AWS S3          │
 │                                                                  │
 │  forge-devkit-landing                PUBLIC                      │
 │  └─ reumbra.dev/forge — website, pricing, docs                   │
@@ -47,7 +47,7 @@ Forge DevKit is a commercial product by [Reumbra](https://reumbra.dev) — AI-po
                                 │
                        ┌────────┴─────────┐
                        │  Plugin Storage   │
-                       │  (Cloudflare R2)  │
+                       │  (AWS S3)        │
                        └───────────────────┘
 ```
 
@@ -70,7 +70,7 @@ forge doctor                     # Diagnostics: Claude Code found? Plugins intac
 {
   "license_key": "FRG-XXXX-XXXX-XXXX",
   "machine_id": "a1b2c3...",
-  "api_url": "https://api.reumbra.dev",
+  "api_url": "https://api.reumbra.com/velvet",
   "installed_plugins": {
     "forge-core": { "version": "1.5.0", "installed_at": "2026-02-19T..." },
     "forge-product": { "version": "0.4.0", "installed_at": "2026-02-19T..." }
@@ -115,9 +115,21 @@ Activate flow:
 
 - **Runtime:** Node.js >=20
 - **Package:** `@reumbra/forge` (public, scoped npm)
-- **Zero runtime dependencies** — uses only Node.js built-ins
+- **Dependencies:** Commander.js (routing), @clack/prompts (interactive UI)
 - **Build:** TypeScript (strict), Biome (lint + format)
-- **Tests:** Vitest
+- **Tests:** Vitest (112 tests, 17 suites)
+
+## Installation
+
+```bash
+npm install -g @reumbra/forge
+```
+
+Or run without installing:
+
+```bash
+npx @reumbra/forge doctor
+```
 
 ## Development
 
