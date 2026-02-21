@@ -25,9 +25,9 @@ Forge DevKit is a commercial product by [Reumbra](https://reumbra.dev) — AI-po
 │  └─ reumbra.dev/forge — website, pricing, docs                   │
 │  └─ Astro + Tailwind, hosted on Cloudflare Pages                 │
 │                                                                  │
-│  forge-devkit-plugins                PRIVATE (currently public)   │
+│  forge-devkit-plugins                PRIVATE                      │
 │  └─ Plugin source code, tests, design docs                       │
-│  └─ Currently: github.com/maselious/ai-marketplace               │
+│  └─ github.com/reumbra/ai-marketplace                            │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -86,7 +86,7 @@ $ forge install core
 1. Read config.json -> license_key, machine_id
 2. POST /plugins/download {license_key, machine_id, plugin: "forge-core", version: "latest"}
 3. API validates license, expiry, machine_id, plugin access
-4. Returns signed download URL (R2 presigned, 5 min TTL)
+4. Returns signed download URL (S3 presigned, 5 min TTL)
 5. CLI downloads .zip via signed URL
 6. Unpacks to ~/.forge/cache/forge-core@1.5.0/
 7. Links into Claude Code plugin directory
@@ -140,6 +140,17 @@ pnpm build            # Compile TypeScript → dist/
 pnpm check            # Lint + format (Biome)
 pnpm test             # Run tests
 ```
+
+## Releasing
+
+```bash
+npm version patch         # bump 0.1.0 → 0.1.1 + git tag v0.1.1
+git push --follow-tags    # triggers GitHub Actions → npm publish
+```
+
+CI runs build → lint → test on every push. Publish workflow triggers on `v*` tags.
+
+See [docs/DEPLOY.md](docs/DEPLOY.md) for full deploy guide.
 
 ### Project Structure
 

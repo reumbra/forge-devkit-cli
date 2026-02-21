@@ -4,7 +4,8 @@
   "description": "CLI for installing and managing Forge plugins for Claude Code",
   "type": "module",
   "bin": {
-    "forge": "./bin/forge.js"
+    "forge": "./bin/forge.js",
+    "@reumbra/forge": "./bin/forge.js"
   },
   "files": [
     "bin/",
