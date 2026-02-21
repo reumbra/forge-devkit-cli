@@ -34,7 +34,8 @@
     "url": "https://github.com/reumbra/forge-devkit-cli"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "engines": {
     "node": ">=20"
