@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
 import { Command } from "commander";
 import { activate } from "./commands/activate.js";
@@ -10,6 +7,7 @@ import { deactivate } from "./commands/deactivate.js";
 import { doctor } from "./commands/doctor.js";
 import { install } from "./commands/install.js";
 import { list } from "./commands/list.js";
+import { selfUpdate } from "./commands/self-update.js";
 import { status } from "./commands/status.js";
 import { uninstall } from "./commands/uninstall.js";
 import { update } from "./commands/update.js";
@@ -17,12 +15,7 @@ import { loadConfig } from "./lib/config.js";
 import { log } from "./lib/logger.js";
 import { bold, dim, reset } from "./lib/styles.js";
 import { banner } from "./lib/ui.js";
-
-function getVersion(): string {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8"));
-  return pkg.version;
-}
+import { getVersion } from "./lib/version.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -214,6 +207,13 @@ export function createProgram(): Command {
     .action(async () => {
       const result = await doctor();
       if (result.issues > 0) process.exit(1);
+    });
+
+  program
+    .command("self-update")
+    .description("Update Forge CLI to the latest version")
+    .action(async () => {
+      await selfUpdate();
     });
 
   return program;

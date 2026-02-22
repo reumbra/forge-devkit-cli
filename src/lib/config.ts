@@ -31,6 +31,7 @@ export function loadConfig(): ForgeConfig {
       installed_plugins: parsed.installed_plugins ?? defaults.installed_plugins,
       plan: parsed.plan,
       expires_at: parsed.expires_at,
+      last_update_check: parsed.last_update_check,
     };
   } catch {
     return defaultConfig();

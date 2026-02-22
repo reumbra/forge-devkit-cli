@@ -1,18 +1,21 @@
 import { existsSync } from "node:fs";
 import * as p from "@clack/prompts";
-import { loadConfig } from "../lib/config.js";
+import { loadConfig, saveConfig } from "../lib/config.js";
 import { CONFIG_PATH } from "../lib/paths.js";
 import { cyan, dim, green, reset, yellow } from "../lib/styles.js";
 import { banner } from "../lib/ui.js";
+import type { UpdateInfo } from "../lib/version.js";
+import { checkForUpdate } from "../lib/version.js";
 import { showAccount } from "./account.js";
 import { activate } from "./activate.js";
 import { deactivate } from "./deactivate.js";
 import { doctor } from "./doctor.js";
 import { pluginsMenu } from "./plugins-menu.js";
+import { selfUpdate } from "./self-update.js";
 
-type Action = "plugins" | "account" | "doctor" | "deactivate" | "activate" | "exit";
+type Action = "plugins" | "account" | "doctor" | "deactivate" | "activate" | "self-update" | "exit";
 
-function buildEnhancedStatus(): string {
+function buildEnhancedStatus(updateInfo?: UpdateInfo | null): string {
   if (!existsSync(CONFIG_PATH)) {
     return `${yellow}No config found${reset} ${dim}\u2014 run activate to get started${reset}`;
   }
@@ -49,16 +52,35 @@ function buildEnhancedStatus(): string {
     }
   }
 
+  if (updateInfo?.updateAvailable) {
+    parts.push(
+      `${yellow}Update available${reset}  ${dim}v${updateInfo.current}${reset} → ${cyan}v${updateInfo.latest}${reset}`,
+    );
+  }
+
   parts.push(`${cyan}${pluginLabel}${reset}`);
 
   return parts.join("\n");
 }
 
-function getMenuOptions(hasLicense: boolean): { value: Action; label: string; hint?: string }[] {
+function getMenuOptions(
+  hasLicense: boolean,
+  updateInfo?: UpdateInfo | null,
+): { value: Action; label: string; hint?: string }[] {
+  const updateOption: { value: Action; label: string; hint?: string } | null =
+    updateInfo?.updateAvailable
+      ? {
+          value: "self-update",
+          label: "Update Forge",
+          hint: `v${updateInfo.current} → v${updateInfo.latest}`,
+        }
+      : null;
+
   if (!hasLicense) {
     return [
       { value: "activate", label: "Activate license", hint: "bind a license key to this machine" },
       { value: "doctor", label: "Run diagnostics", hint: "check environment health" },
+      ...(updateOption ? [updateOption] : []),
       { value: "exit", label: "Exit" },
     ];
   }
@@ -73,6 +95,7 @@ function getMenuOptions(hasLicense: boolean): { value: Action; label: string; hi
     { value: "plugins", label: "Manage plugins", hint: pluginHint },
     { value: "account", label: "License & devices", hint: expiryHint },
     { value: "doctor", label: "Run diagnostics", hint: "check environment health" },
+    ...(updateOption ? [updateOption] : []),
     { value: "deactivate", label: "Deactivate", hint: "unbind this machine" },
     { value: "exit", label: "Exit" },
   ];
@@ -109,6 +132,10 @@ async function executeAction(action: Action): Promise<void> {
       await doctor();
       break;
 
+    case "self-update":
+      await selfUpdate();
+      break;
+
     case "deactivate": {
       const confirmed = await p.confirm({
         message: "Deactivate this machine? This will free up a machine slot.",
@@ -126,17 +153,29 @@ async function executeAction(action: Action): Promise<void> {
 export async function dashboard(): Promise<void> {
   console.log(`\n${banner()}\n`);
 
+  // Start update check in parallel with banner display
+  const config = loadConfig();
+  const updateCheckPromise = checkForUpdate(config.last_update_check);
+
+  // Await before first menu render
+  let updateInfo = await updateCheckPromise;
+
+  // Persist check timestamp
+  if (updateInfo) {
+    saveConfig({ ...config, last_update_check: new Date().toISOString() });
+  }
+
   // Dashboard loop
   while (true) {
-    const statusLine = buildEnhancedStatus();
+    const statusLine = buildEnhancedStatus(updateInfo);
     p.log.info(statusLine);
 
-    const config = loadConfig();
-    const hasLicense = config.license_key != null;
+    const currentConfig = loadConfig();
+    const hasLicense = currentConfig.license_key != null;
 
     const action = await p.select<Action>({
       message: "What would you like to do?",
-      options: getMenuOptions(hasLicense),
+      options: getMenuOptions(hasLicense, updateInfo),
     });
 
     if (p.isCancel(action) || action === "exit") {
@@ -150,6 +189,11 @@ export async function dashboard(): Promise<void> {
       if (err instanceof Error) {
         p.log.error(err.message);
       }
+    }
+
+    // Clear update info after self-update action
+    if (action === "self-update") {
+      updateInfo = null;
     }
 
     // Spacer before next loop iteration
