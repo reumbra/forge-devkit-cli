@@ -3,6 +3,8 @@ export interface ForgeConfig {
   machine_id: string;
   api_url: string;
   installed_plugins: Record<string, InstalledPlugin>;
+  plan?: string;
+  expires_at?: string;
 }
 
 export interface InstalledPlugin {

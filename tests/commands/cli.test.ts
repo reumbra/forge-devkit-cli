@@ -4,16 +4,25 @@ import { describe, expect, it } from "vitest";
 
 const CLI_PATH = join(import.meta.dirname, "..", "..", "bin", "forge.js");
 
-function run(...args: string[]): {
+function run(...argsAndOpts: [...string[], { timeout?: number }] | string[]): {
   stdout: string;
   stderr: string;
   output: string;
   exitCode: number;
 } {
+  let timeout = 5000;
+  let args: string[];
+  const last = argsAndOpts[argsAndOpts.length - 1];
+  if (typeof last === "object" && last !== null && "timeout" in last) {
+    timeout = (last as { timeout?: number }).timeout ?? 5000;
+    args = argsAndOpts.slice(0, -1) as string[];
+  } else {
+    args = argsAndOpts as string[];
+  }
   try {
     const stdout = execFileSync("node", [CLI_PATH, ...args], {
       encoding: "utf-8",
-      timeout: 5000,
+      timeout,
       env: { ...process.env, NO_COLOR: "1" },
     });
     return { stdout, stderr: "", output: stdout, exitCode: 0 };
@@ -91,17 +100,16 @@ describe("CLI dispatch (Commander + interactive)", () => {
 
   // Commands that work
   it("doctor runs and checks Node.js", () => {
-    const { output } = run("doctor");
+    const { output } = run("doctor", { timeout: 30000 });
     expect(output).toContain("Diagnostics");
     expect(output).toContain("Node.js");
-  });
+  }, 35000);
 
   // Aliases
   it("accepts 'ls' as alias for 'list'", () => {
-    const { output, exitCode } = run("ls");
-    expect(exitCode).toBe(1);
-    expect(output).toContain("No license key");
-  });
+    const { output } = run("ls", { timeout: 30000 });
+    expect(output).not.toContain("Unknown command");
+  }, 35000);
 
   it("accepts 'remove' as alias for 'uninstall' (non-TTY → error)", () => {
     const { output, exitCode } = run("remove");

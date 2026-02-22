@@ -60,6 +60,10 @@ export interface Spinner {
 }
 
 export function createSpinner(initialMsg: string): Spinner {
+  if (!process.stdout.isTTY) {
+    return { update() {}, stop() {} };
+  }
+
   let frame = 0;
   let message = initialMsg;
   let stopped = false;

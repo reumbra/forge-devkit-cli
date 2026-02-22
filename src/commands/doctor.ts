@@ -4,7 +4,7 @@ import { loadConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
 import { CACHE_DIR, CONFIG_PATH, claudePluginDir, FORGE_DIR } from "../lib/paths.js";
 import { bold, dim, green, reset, yellow } from "../lib/styles.js";
-import { banner, box } from "../lib/ui.js";
+import { banner, box, createSpinner } from "../lib/ui.js";
 
 export interface DoctorResult {
   checks: number;
@@ -116,12 +116,14 @@ export async function doctor(): Promise<DoctorResult> {
     ? config.api_url
     : (process.env.FORGE_API_URL ?? "https://api.reumbra.com/velvet");
   let apiOk = false;
+  const spinner = createSpinner("Checking API connectivity...");
   try {
     const res = await fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(25000) });
     apiOk = res.ok;
   } catch {
     // unreachable or timeout (Lambda cold starts can take ~20s)
   }
+  spinner.stop();
   results.push({
     label: "API connectivity",
     ok: apiOk,

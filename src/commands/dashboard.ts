@@ -2,47 +2,56 @@ import { existsSync } from "node:fs";
 import * as p from "@clack/prompts";
 import { loadConfig } from "../lib/config.js";
 import { CONFIG_PATH } from "../lib/paths.js";
-import { bold, cyan, dim, green, reset, yellow } from "../lib/styles.js";
+import { cyan, dim, green, reset, yellow } from "../lib/styles.js";
 import { banner } from "../lib/ui.js";
+import { showAccount } from "./account.js";
 import { activate } from "./activate.js";
-import { showConfig } from "./config.js";
 import { deactivate } from "./deactivate.js";
 import { doctor } from "./doctor.js";
-import { install } from "./install.js";
-import { list } from "./list.js";
-import { status } from "./status.js";
-import { uninstall } from "./uninstall.js";
-import { update } from "./update.js";
+import { pluginsMenu } from "./plugins-menu.js";
 
-type Action =
-  | "status"
-  | "list"
-  | "install"
-  | "update"
-  | "uninstall"
-  | "doctor"
-  | "config"
-  | "activate"
-  | "deactivate"
-  | "exit";
+type Action = "plugins" | "account" | "doctor" | "deactivate" | "activate" | "exit";
 
-function buildStatusLine(): string {
+function buildEnhancedStatus(): string {
   if (!existsSync(CONFIG_PATH)) {
-    return `${yellow}No config found${reset} ${dim}— run activate to get started${reset}`;
+    return `${yellow}No config found${reset} ${dim}\u2014 run activate to get started${reset}`;
   }
 
   const config = loadConfig();
 
   if (!config.license_key) {
-    return `${yellow}No license key${reset} ${dim}— run activate to bind a license${reset}`;
+    return `${yellow}No license key${reset} ${dim}\u2014 run activate to bind a license${reset}`;
   }
 
   const maskedKey = `${config.license_key.slice(0, 8)}..${config.license_key.slice(-4)}`;
   const pluginCount = Object.keys(config.installed_plugins).length;
   const pluginLabel =
-    pluginCount === 0 ? "no plugins" : `${pluginCount} plugin${pluginCount > 1 ? "s" : ""}`;
+    pluginCount === 0
+      ? "no plugins"
+      : `${pluginCount} plugin${pluginCount > 1 ? "s" : ""} installed`;
 
-  return `${green}Licensed${reset} ${dim}${maskedKey}${reset}  ${cyan}${pluginLabel} installed${reset}`;
+  const parts: string[] = [`${green}Licensed${reset}  ${dim}${maskedKey}${reset}`];
+
+  // Show plan if cached
+  if (config.plan) {
+    parts[0] += `  ${dim}\u00b7${reset}  ${cyan}${config.plan}${reset}`;
+  }
+
+  // Show expiry if cached
+  if (config.expires_at) {
+    const expires = new Date(config.expires_at);
+    const daysLeft = Math.ceil((expires.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const expiryStr = `expires ${expires.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}`;
+    if (daysLeft <= 14) {
+      parts[0] += `  ${dim}\u00b7${reset}  ${yellow}${expiryStr} (${daysLeft}d)${reset}`;
+    } else {
+      parts[0] += `  ${dim}\u00b7  ${expiryStr} (${daysLeft}d)${reset}`;
+    }
+  }
+
+  parts.push(`${cyan}${pluginLabel}${reset}`);
+
+  return parts.join("\n");
 }
 
 function getMenuOptions(hasLicense: boolean): { value: Action; label: string; hint?: string }[] {
@@ -50,19 +59,20 @@ function getMenuOptions(hasLicense: boolean): { value: Action; label: string; hi
     return [
       { value: "activate", label: "Activate license", hint: "bind a license key to this machine" },
       { value: "doctor", label: "Run diagnostics", hint: "check environment health" },
-      { value: "config", label: "Show config", hint: "view current configuration" },
       { value: "exit", label: "Exit" },
     ];
   }
 
+  const config = loadConfig();
+  const pluginCount = Object.keys(config.installed_plugins).length;
+  const pluginHint = pluginCount > 0 ? `${pluginCount} installed` : "browse & install";
+
+  const expiryHint = config.plan ? `${config.plan} plan` : "view license details";
+
   return [
-    { value: "status", label: "License status", hint: "plan, expiry, devices, plugins" },
-    { value: "list", label: "Browse plugins", hint: "see available plugins for your plan" },
-    { value: "install", label: "Install plugin", hint: "download and install a plugin" },
-    { value: "update", label: "Update plugins", hint: "check for and apply updates" },
-    { value: "uninstall", label: "Uninstall plugin", hint: "remove an installed plugin" },
+    { value: "plugins", label: "Manage plugins", hint: pluginHint },
+    { value: "account", label: "License & devices", hint: expiryHint },
     { value: "doctor", label: "Run diagnostics", hint: "check environment health" },
-    { value: "config", label: "Show config", hint: "view current configuration" },
     { value: "deactivate", label: "Deactivate", hint: "unbind this machine" },
     { value: "exit", label: "Exit" },
   ];
@@ -87,74 +97,16 @@ async function executeAction(action: Action): Promise<void> {
       break;
     }
 
-    case "install": {
-      const plugin = await p.text({
-        message: "Plugin name to install:",
-        placeholder: "e.g. core, forge-product@1.2.0",
-        validate: (v) => {
-          if (!v?.trim()) return "Plugin name is required";
-        },
-      });
-      if (p.isCancel(plugin)) return;
-
-      let name = plugin.trim();
-      let version: string | undefined;
-      if (name.includes("@")) {
-        const parts = name.split("@");
-        name = parts[0];
-        version = parts[1];
-      }
-      await install(name, version);
-      break;
-    }
-
-    case "uninstall": {
-      const config = loadConfig();
-      const installed = Object.keys(config.installed_plugins);
-
-      if (installed.length === 0) {
-        p.log.warn("No plugins installed.");
-        return;
-      }
-
-      const plugin = await p.select({
-        message: "Select plugin to uninstall:",
-        options: installed.map((name) => ({
-          value: name,
-          label: name,
-          hint: `v${config.installed_plugins[name].version}`,
-        })),
-      });
-      if (p.isCancel(plugin)) return;
-
-      const confirmed = await p.confirm({
-        message: `Uninstall ${bold}${plugin}${reset}?`,
-      });
-      if (p.isCancel(confirmed) || !confirmed) return;
-
-      uninstall(plugin);
-      break;
-    }
-
-    case "update":
-      await update();
+    case "plugins":
+      await pluginsMenu();
       break;
 
-    case "status":
-      await status();
+    case "account":
+      await showAccount();
       break;
 
-    case "list":
-      await list();
-      break;
-
-    case "doctor": {
+    case "doctor":
       await doctor();
-      break;
-    }
-
-    case "config":
-      showConfig();
       break;
 
     case "deactivate": {
@@ -176,7 +128,7 @@ export async function dashboard(): Promise<void> {
 
   // Dashboard loop
   while (true) {
-    const statusLine = buildStatusLine();
+    const statusLine = buildEnhancedStatus();
     p.log.info(statusLine);
 
     const config = loadConfig();

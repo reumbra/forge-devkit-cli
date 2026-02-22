@@ -1,6 +1,7 @@
 import { ApiError, apiRequest } from "../lib/api.js";
 import { loadConfig, saveConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
+import { createSpinner } from "../lib/ui.js";
 
 export async function deactivate(): Promise<void> {
   const config = loadConfig();
@@ -10,7 +11,7 @@ export async function deactivate(): Promise<void> {
     process.exit(1);
   }
 
-  log.step("Deactivating this machine...");
+  const spinner = createSpinner("Deactivating this machine...");
 
   try {
     await apiRequest(config, {
@@ -25,9 +26,11 @@ export async function deactivate(): Promise<void> {
     config.license_key = null;
     saveConfig(config);
 
+    spinner.stop();
     log.success("Machine deactivated. License slot freed.");
     log.info("You can now activate on another machine.");
   } catch (err) {
+    spinner.stop();
     if (err instanceof ApiError) {
       log.error(err.message);
       process.exit(1);

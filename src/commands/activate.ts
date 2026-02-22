@@ -26,6 +26,8 @@ export async function activate(licenseKey: string): Promise<void> {
       },
     });
 
+    config.plan = result.license.plan;
+    config.expires_at = result.license.expires_at;
     saveConfig(config);
 
     const expires = new Date(result.license.expires_at);
