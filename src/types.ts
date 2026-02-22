@@ -5,6 +5,7 @@ export interface ForgeConfig {
   installed_plugins: Record<string, InstalledPlugin>;
   plan?: string;
   expires_at?: string;
+  last_update_check?: string;
 }
 
 export interface InstalledPlugin {

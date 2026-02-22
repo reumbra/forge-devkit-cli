@@ -122,4 +122,19 @@ describe("CLI dispatch (Commander + interactive)", () => {
     expect(stdout).toContain("list|ls");
     expect(stdout).toContain("uninstall|remove");
   });
+
+  // Self-update
+  it("shows self-update in help", () => {
+    const { stdout } = run("--help");
+    expect(stdout).toContain("self-update");
+  });
+
+  it("self-update command is recognized", () => {
+    const { output, exitCode } = run("self-update", { timeout: 15000 });
+    // Should not fail as "unknown command" — it either succeeds or fails due to network
+    expect(output).not.toContain("Unknown command");
+    // Exit code 0 means it ran (reported "already on latest" or similar)
+    // Non-zero could mean network timeout, but command was recognized
+    expect(exitCode === 0 || !output.includes("Unknown command")).toBe(true);
+  }, 20000);
 });
