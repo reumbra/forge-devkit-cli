@@ -3,12 +3,12 @@ import { ApiError } from "../lib/api.js";
 import { loadConfig } from "../lib/config.js";
 import { bold, dim, reset } from "../lib/styles.js";
 import { createSpinner } from "../lib/ui.js";
-import { install } from "./install.js";
+import { install, installAll } from "./install.js";
 import { fetchPluginList, renderPluginTable } from "./list.js";
 import { uninstall } from "./uninstall.js";
 import { update } from "./update.js";
 
-type PluginAction = "install" | "update" | "uninstall" | "back";
+type PluginAction = "install" | "install-all" | "update" | "uninstall" | "back";
 
 export async function pluginsMenu(): Promise<void> {
   while (true) {
@@ -64,6 +64,13 @@ export async function pluginsMenu(): Promise<void> {
     const options: { value: PluginAction; label: string; hint?: string }[] = [];
 
     if (apiAvailable && notInstalledNames.length > 0) {
+      if (notInstalledNames.length > 1) {
+        options.push({
+          value: "install-all",
+          label: "Install all plugins",
+          hint: `${notInstalledNames.length} available`,
+        });
+      }
       options.push({
         value: "install",
         label: "Install a plugin",
@@ -99,6 +106,10 @@ export async function pluginsMenu(): Promise<void> {
     console.log();
 
     switch (action) {
+      case "install-all":
+        await installAll();
+        break;
+
       case "install": {
         const selected = await p.select({
           message: "Select plugin to install:",

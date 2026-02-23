@@ -10,10 +10,11 @@ import {
   updateMarketplaceJson,
 } from "../lib/marketplace.js";
 import { CACHE_DIR } from "../lib/paths.js";
-import { bold, dim, green, reset } from "../lib/styles.js";
+import { bold, dim, green, red, reset } from "../lib/styles.js";
 import { createSpinner } from "../lib/ui.js";
 import { extractZip } from "../lib/zip.js";
 import type { DownloadResponse } from "../types.js";
+import { fetchPluginList } from "./list.js";
 
 export async function install(pluginName: string, version?: string): Promise<void> {
   const config = loadConfig();
@@ -109,4 +110,57 @@ export async function install(pluginName: string, version?: string): Promise<voi
     }
     throw err;
   }
+}
+
+export async function installAll(): Promise<void> {
+  const config = loadConfig();
+
+  if (!config.license_key) {
+    log.error("No license key configured. Run `forge activate <key>` first.");
+    process.exit(1);
+  }
+
+  const spinner = createSpinner("Fetching plugin list...");
+
+  let plugins: { name: string }[];
+  try {
+    plugins = await fetchPluginList(config);
+    spinner.stop();
+  } catch (err) {
+    spinner.stop();
+    if (err instanceof ApiError) {
+      log.error(err.message);
+      process.exit(1);
+    }
+    throw err;
+  }
+
+  if (plugins.length === 0) {
+    log.info("No plugins available for your plan.");
+    return;
+  }
+
+  log.info(`Installing ${bold}${plugins.length}${reset} plugin(s)...\n`);
+
+  let succeeded = 0;
+  let failed = 0;
+
+  for (const plugin of plugins) {
+    try {
+      await install(plugin.name);
+      succeeded++;
+    } catch {
+      log.error(`${red}Failed to install ${plugin.name}${reset}`);
+      failed++;
+    }
+    console.log();
+  }
+
+  if (failed === 0) {
+    log.success(`All ${succeeded} plugin(s) installed.`);
+  } else {
+    log.warn(`${succeeded} installed, ${failed} failed.`);
+  }
+
+  log.info(`${dim}Restart Claude Code to load the plugins.${reset}`);
 }

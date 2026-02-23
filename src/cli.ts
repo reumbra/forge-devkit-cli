@@ -5,7 +5,7 @@ import { showConfig } from "./commands/config.js";
 import { dashboard } from "./commands/dashboard.js";
 import { deactivate } from "./commands/deactivate.js";
 import { doctor } from "./commands/doctor.js";
-import { install } from "./commands/install.js";
+import { install, installAll } from "./commands/install.js";
 import { list } from "./commands/list.js";
 import { selfUpdate } from "./commands/self-update.js";
 import { status } from "./commands/status.js";
@@ -115,7 +115,9 @@ export function createProgram(): Command {
         plugin = input.trim();
       }
 
-      if (plugin.includes("@")) {
+      if (plugin === "all") {
+        await installAll();
+      } else if (plugin.includes("@")) {
         const [name, ver] = plugin.split("@");
         await install(name, ver);
       } else {
