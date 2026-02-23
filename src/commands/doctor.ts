@@ -1,8 +1,16 @@
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { isPluginEnabled } from "../lib/claude-integration.js";
 import { loadConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
-import { CACHE_DIR, CONFIG_PATH, claudePluginDir, FORGE_DIR } from "../lib/paths.js";
+import { marketplacePluginDir } from "../lib/marketplace.js";
+import {
+  CACHE_DIR,
+  CONFIG_PATH,
+  claudeKnownMarketplacesPath,
+  claudePluginDir,
+  FORGE_DIR,
+} from "../lib/paths.js";
 import { bold, dim, green, reset, yellow } from "../lib/styles.js";
 import { banner, box, createSpinner } from "../lib/ui.js";
 
@@ -89,10 +97,44 @@ export async function doctor(): Promise<DoctorResult> {
     hint: !existsSync(pluginDir) ? "Make sure Claude Code is installed" : undefined,
   });
 
-  // 6. Installed plugins integrity
+  // 5b. Marketplace registration
+  const mpPath = claudeKnownMarketplacesPath();
+  if (existsSync(mpPath)) {
+    try {
+      const mpData = JSON.parse(readFileSync(mpPath, "utf-8"));
+      const hasReumbra = mpData.reumbra != null;
+      results.push({
+        label: "Forge marketplace",
+        ok: hasReumbra,
+        detail: hasReumbra ? "registered in Claude Code" : "not registered",
+        hint: !hasReumbra ? "Run `forge install <plugin>` to register" : undefined,
+      });
+    } catch {
+      results.push({
+        label: "Forge marketplace",
+        ok: false,
+        detail: "known_marketplaces.json unreadable",
+      });
+    }
+  }
+
+  // 5c. Plugin enabled status
   const config = loadConfig();
+  for (const [name] of Object.entries(config.installed_plugins)) {
+    const enabled = isPluginEnabled(name);
+    if (!enabled) {
+      results.push({
+        label: `${name} enabled`,
+        ok: false,
+        detail: "disabled in Claude Code",
+        hint: "Run `forge install` to re-enable",
+      });
+    }
+  }
+
+  // 6. Installed plugins integrity (check marketplace dir)
   for (const [name, info] of Object.entries(config.installed_plugins)) {
-    const pluginPath = join(pluginDir, name);
+    const pluginPath = marketplacePluginDir(name);
     if (existsSync(pluginPath)) {
       const hasManifest = existsSync(join(pluginPath, ".claude-plugin", "plugin.json"));
       results.push({
@@ -105,7 +147,7 @@ export async function doctor(): Promise<DoctorResult> {
       results.push({
         label: `${name}@${info.version}`,
         ok: false,
-        detail: "not found on disk",
+        detail: "not found in marketplace",
         hint: `Run \`forge install ${name}\` to reinstall`,
       });
     }

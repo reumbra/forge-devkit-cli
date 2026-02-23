@@ -9,12 +9,19 @@ const testForgeDir = join(testDir, ".forge");
 const testConfigPath = join(testForgeDir, "config.json");
 const testCacheDir = join(testForgeDir, "cache");
 const testPluginDir = join(testDir, ".claude", "plugins");
+const testMarketplaceDir = join(testDir, "marketplace");
+const testClaudeDir = join(testDir, ".claude");
+const testSettingsPath = join(testClaudeDir, "settings.json");
+const testKnownMpPath = join(testClaudeDir, "plugins", "known_marketplaces.json");
 
 vi.mock("../../src/lib/paths.js", () => ({
   FORGE_DIR: testForgeDir,
   CONFIG_PATH: testConfigPath,
   CACHE_DIR: testCacheDir,
+  MARKETPLACE_DIR: testMarketplaceDir,
   claudePluginDir: () => testPluginDir,
+  claudeSettingsPath: () => testSettingsPath,
+  claudeKnownMarketplacesPath: () => testKnownMpPath,
 }));
 
 // Suppress console output in tests
@@ -31,6 +38,8 @@ describe("doctor", () => {
   beforeEach(() => {
     mkdirSync(testForgeDir, { recursive: true });
     mkdirSync(testPluginDir, { recursive: true });
+    mkdirSync(join(testMarketplaceDir, "plugins"), { recursive: true });
+    mkdirSync(join(testClaudeDir, "plugins"), { recursive: true });
     mockFetch.mockResolvedValue({ ok: true, status: 200 });
   });
 
@@ -115,9 +124,13 @@ describe("doctor", () => {
   });
 
   it("detects intact plugin with plugin.json", async () => {
-    const pluginPath = join(testPluginDir, "forge-core", ".claude-plugin");
+    const pluginPath = join(testMarketplaceDir, "plugins", "forge-core", ".claude-plugin");
     mkdirSync(pluginPath, { recursive: true });
     writeFileSync(join(pluginPath, "plugin.json"), "{}");
+    writeFileSync(
+      testSettingsPath,
+      JSON.stringify({ enabledPlugins: { "forge-core@reumbra": true } }),
+    );
     writeFileSync(
       testConfigPath,
       JSON.stringify({
@@ -134,7 +147,7 @@ describe("doctor", () => {
   });
 
   it("reports corrupted plugin (missing plugin.json)", async () => {
-    const pluginPath = join(testPluginDir, "forge-core");
+    const pluginPath = join(testMarketplaceDir, "plugins", "forge-core");
     mkdirSync(pluginPath, { recursive: true });
     // No .claude-plugin/plugin.json
     writeFileSync(
@@ -162,6 +175,41 @@ describe("doctor", () => {
       }),
     );
     mockFetch.mockRejectedValue(new Error("fetch failed"));
+
+    const result = await doctor();
+    expect(result.issues).toBeGreaterThanOrEqual(1);
+  });
+
+  it("reports marketplace not registered", async () => {
+    writeFileSync(testKnownMpPath, JSON.stringify({ other: {} }));
+    writeFileSync(
+      testConfigPath,
+      JSON.stringify({
+        license_key: "FRG-TEST-NOREG-MP1",
+        machine_id: "abcdef123456",
+        api_url: "https://api.test.dev",
+        installed_plugins: {},
+      }),
+    );
+
+    const result = await doctor();
+    expect(result.issues).toBeGreaterThanOrEqual(1);
+  });
+
+  it("reports plugin disabled in Claude Code", async () => {
+    writeFileSync(
+      testSettingsPath,
+      JSON.stringify({ enabledPlugins: { "forge-core@reumbra": false } }),
+    );
+    writeFileSync(
+      testConfigPath,
+      JSON.stringify({
+        license_key: "FRG-TEST-DISB-PLG1",
+        machine_id: "abcdef123456",
+        api_url: "https://api.test.dev",
+        installed_plugins: { "forge-core": { version: "1.0.0", installed_at: "2026-01-01" } },
+      }),
+    );
 
     const result = await doctor();
     expect(result.issues).toBeGreaterThanOrEqual(1);
