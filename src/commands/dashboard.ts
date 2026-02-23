@@ -159,9 +159,9 @@ export async function dashboard(): Promise<void> {
   const version = getVersion();
   console.log(`\n${banner()} ${dim}v${version}${reset}\n`);
 
-  // Start update check in parallel with banner display
+  // Always check for updates on dashboard launch (no throttle for interactive use)
   const config = loadConfig();
-  const updateCheckPromise = checkForUpdate(config.last_update_check);
+  const updateCheckPromise = checkForUpdate();
 
   // Await before first menu render
   let updateInfo = await updateCheckPromise;
