@@ -37,8 +37,11 @@ export async function selfUpdate(): Promise<void> {
     });
 
     installSpinner.stop(`${green}Updated to v${info.latest}${reset}`);
-  } catch {
+  } catch (err) {
     installSpinner.stop(`${red}Update failed${reset}`);
+    if (err instanceof Error) {
+      p.log.warn(`${dim}${err.message}${reset}`);
+    }
     p.log.warn(`Run manually:\n  ${dim}$${reset} npm install -g @reumbra/forge@${info.latest}`);
   }
 }
