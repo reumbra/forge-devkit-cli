@@ -5,7 +5,7 @@ import { CONFIG_PATH } from "../lib/paths.js";
 import { cyan, dim, green, reset, yellow } from "../lib/styles.js";
 import { banner } from "../lib/ui.js";
 import type { UpdateInfo } from "../lib/version.js";
-import { checkForUpdate } from "../lib/version.js";
+import { checkForUpdate, getVersion } from "../lib/version.js";
 import { showAccount } from "./account.js";
 import { activate } from "./activate.js";
 import { deactivate } from "./deactivate.js";
@@ -151,7 +151,13 @@ async function executeAction(action: Action): Promise<void> {
 }
 
 export async function dashboard(): Promise<void> {
-  console.log(`\n${banner()}\n`);
+  // Set terminal title
+  if (process.stdout.isTTY) {
+    process.stdout.write("\x1b]0;Forge DevKit CLI — Reumbra\x07");
+  }
+
+  const version = getVersion();
+  console.log(`\n${banner()} ${dim}v${version}${reset}\n`);
 
   // Start update check in parallel with banner display
   const config = loadConfig();
@@ -163,6 +169,13 @@ export async function dashboard(): Promise<void> {
   // Persist check timestamp
   if (updateInfo) {
     saveConfig({ ...config, last_update_check: new Date().toISOString() });
+  }
+
+  // Show update notice prominently
+  if (updateInfo?.updateAvailable) {
+    p.log.warn(
+      `${yellow}New version available:${reset} ${dim}v${updateInfo.current}${reset} → ${cyan}v${updateInfo.latest}${reset}\n  Run ${dim}forge self-update${reset} to update`,
+    );
   }
 
   // Dashboard loop
