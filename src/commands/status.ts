@@ -1,4 +1,5 @@
 import { ApiError, apiRequest } from "../lib/api.js";
+import { isPluginEnabled } from "../lib/claude-integration.js";
 import { loadConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
 import { bold, dim, green, red, reset, yellow } from "../lib/styles.js";
@@ -73,9 +74,14 @@ export async function status(): Promise<void> {
         const stat = installed
           ? badge(`v${installed.version}`, "success")
           : badge("not installed", "neutral");
-        return [name, stat];
+        const enabled = installed
+          ? isPluginEnabled(name)
+            ? badge("enabled", "info")
+            : badge("disabled", "neutral")
+          : "";
+        return [name, stat, enabled];
       });
-      console.log(table(pluginRows, { header: ["Plugin", "Status"] }));
+      console.log(table(pluginRows, { header: ["Plugin", "Status", "Claude Code"] }));
     }
   } catch (err) {
     spinner.stop();
