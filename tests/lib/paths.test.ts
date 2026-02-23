@@ -2,12 +2,10 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  CACHE_DIR,
-  CONFIG_PATH,
-  FORGE_DIR,
-  MARKETPLACE_DIR,
   claudeKnownMarketplacesPath,
   claudeSettingsPath,
+  FORGE_DIR,
+  MARKETPLACE_DIR,
 } from "../../src/lib/paths.js";
 
 describe("paths", () => {
