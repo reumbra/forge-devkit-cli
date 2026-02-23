@@ -1,9 +1,15 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { ApiError, apiRequest, downloadFile } from "../lib/api.js";
+import { enablePlugin, registerMarketplace } from "../lib/claude-integration.js";
 import { loadConfig, saveConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
-import { CACHE_DIR, claudePluginDir } from "../lib/paths.js";
+import {
+  ensureMarketplaceDir,
+  marketplacePluginDir,
+  updateMarketplaceJson,
+} from "../lib/marketplace.js";
+import { CACHE_DIR } from "../lib/paths.js";
 import { bold, dim, green, reset } from "../lib/styles.js";
 import { createSpinner } from "../lib/ui.js";
 import { extractZip } from "../lib/zip.js";
@@ -46,9 +52,36 @@ export async function install(pluginName: string, version?: string): Promise<voi
     mkdirSync(cacheDir, { recursive: true });
     await extractZip(zipBuffer, cacheDir);
 
-    // Link into Claude Code plugin directory
-    spinner.update("Installing into Claude Code...");
-    linkPlugin(fullName, cacheDir);
+    // Install into marketplace
+    spinner.update("Installing into marketplace...");
+    ensureMarketplaceDir();
+
+    const pluginDir = marketplacePluginDir(fullName);
+    if (existsSync(pluginDir)) {
+      rmSync(pluginDir, { recursive: true });
+    }
+
+    // Find the plugin root inside the extracted zip
+    const entries = readdirSync(cacheDir);
+    let sourceDir = cacheDir;
+    if (entries.length === 1) {
+      const nested = join(cacheDir, entries[0]);
+      if (existsSync(join(nested, ".claude-plugin"))) {
+        sourceDir = nested;
+      }
+    }
+
+    mkdirSync(pluginDir, { recursive: true });
+    cpSync(sourceDir, pluginDir, { recursive: true });
+
+    // Update marketplace catalog
+    updateMarketplaceJson(fullName, `Forge plugin: ${fullName}`, result.version);
+
+    // Register marketplace in Claude Code (first time only)
+    registerMarketplace();
+
+    // Enable plugin in Claude Code settings
+    enablePlugin(fullName);
 
     // Update config
     config.installed_plugins[fullName] = {
@@ -58,7 +91,7 @@ export async function install(pluginName: string, version?: string): Promise<voi
     saveConfig(config);
 
     spinner.stop(`${green}✓${reset} ${bold}${fullName}@${result.version}${reset} installed!`);
-    log.info(`${dim}Run the plugin setup command in your project to get started.${reset}`);
+    log.info(`${dim}Restart Claude Code to load the plugin.${reset}`);
   } catch (err) {
     spinner.stop();
     if (err instanceof ApiError) {
@@ -76,30 +109,4 @@ export async function install(pluginName: string, version?: string): Promise<voi
     }
     throw err;
   }
-}
-
-function linkPlugin(pluginName: string, cacheDir: string): void {
-  const destDir = join(claudePluginDir(), pluginName);
-
-  // Remove existing install
-  if (existsSync(destDir)) {
-    rmSync(destDir, { recursive: true });
-  }
-
-  // Find the plugin root inside the extracted zip
-  // Could be at root or nested one level (e.g., forge-core-1.0.0/)
-  const entries = readdirSync(cacheDir);
-  let sourceDir = cacheDir;
-
-  // If there's a single directory and it contains .claude-plugin/, use it
-  if (entries.length === 1) {
-    const nested = join(cacheDir, entries[0]);
-    if (existsSync(join(nested, ".claude-plugin"))) {
-      sourceDir = nested;
-    }
-  }
-
-  // Copy to Claude Code plugins directory
-  mkdirSync(destDir, { recursive: true });
-  cpSync(sourceDir, destDir, { recursive: true });
 }

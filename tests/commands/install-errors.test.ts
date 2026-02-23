@@ -9,12 +9,17 @@ const testForgeDir = join(testDir, ".forge");
 const testConfigPath = join(testForgeDir, "config.json");
 const testCacheDir = join(testForgeDir, "cache");
 const testPluginDir = join(testDir, "plugins");
+const testMarketplaceDir = join(testForgeDir, "marketplace");
+const testClaudeDir = join(testDir, ".claude");
 
 vi.mock("../../src/lib/paths.js", () => ({
   FORGE_DIR: testForgeDir,
   CONFIG_PATH: testConfigPath,
   CACHE_DIR: testCacheDir,
+  MARKETPLACE_DIR: testMarketplaceDir,
   claudePluginDir: () => testPluginDir,
+  claudeSettingsPath: () => join(testClaudeDir, "settings.json"),
+  claudeKnownMarketplacesPath: () => join(testClaudeDir, "plugins", "known_marketplaces.json"),
 }));
 
 const mockFetch = vi.fn();
