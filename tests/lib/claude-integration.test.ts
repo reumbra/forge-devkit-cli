@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,6 +9,8 @@ const testMarketplaceDir = join(testDir, "marketplace");
 const testClaudeDir = join(testDir, ".claude");
 const testSettingsPath = join(testClaudeDir, "settings.json");
 const testKnownMpPath = join(testClaudeDir, "plugins", "known_marketplaces.json");
+const testInstalledPluginsPath = join(testClaudeDir, "plugins", "installed_plugins.json");
+const testPluginCacheDir = join(testClaudeDir, "plugins", "cache");
 
 vi.mock("../../src/lib/paths.js", () => ({
   MARKETPLACE_DIR: testMarketplaceDir,
@@ -18,10 +20,18 @@ vi.mock("../../src/lib/paths.js", () => ({
   claudePluginDir: () => join(testClaudeDir, "plugins"),
   claudeSettingsPath: () => testSettingsPath,
   claudeKnownMarketplacesPath: () => testKnownMpPath,
+  claudeInstalledPluginsPath: () => testInstalledPluginsPath,
+  claudePluginCacheDir: () => testPluginCacheDir,
 }));
 
-const { registerMarketplace, enablePlugin, disablePlugin, isPluginEnabled, removeMarketplace } =
-  await import("../../src/lib/claude-integration.js");
+const {
+  registerMarketplace,
+  enablePlugin,
+  disablePlugin,
+  isPluginEnabled,
+  removeMarketplace,
+  invalidatePluginCache,
+} = await import("../../src/lib/claude-integration.js");
 
 describe("claude-integration", () => {
   beforeEach(() => {
@@ -133,6 +143,58 @@ describe("claude-integration", () => {
       const data = JSON.parse(readFileSync(testKnownMpPath, "utf-8"));
       expect(data.reumbra).toBeUndefined();
       expect(data["claude-plugins-official"]).toBeDefined();
+    });
+  });
+
+  describe("invalidatePluginCache", () => {
+    it("removes plugin entry from installed_plugins.json, preserves other entries", () => {
+      writeFileSync(
+        testInstalledPluginsPath,
+        JSON.stringify({
+          plugins: {
+            "forge-core@reumbra": { installPath: "/old/path", version: "1.0.0" },
+            "other-plugin@other": { installPath: "/other/path", version: "2.0.0" },
+          },
+        }),
+      );
+      invalidatePluginCache("forge-core");
+      const data = JSON.parse(readFileSync(testInstalledPluginsPath, "utf-8"));
+      expect(data.plugins["forge-core@reumbra"]).toBeUndefined();
+      expect(data.plugins["other-plugin@other"]).toBeDefined();
+    });
+
+    it("removes all version directories from cache", () => {
+      const cacheDir = join(testPluginCacheDir, "reumbra", "forge-core");
+      mkdirSync(join(cacheDir, "1.0.0"), { recursive: true });
+      mkdirSync(join(cacheDir, "2.0.0"), { recursive: true });
+      writeFileSync(join(cacheDir, "1.0.0", "SKILL.md"), "old");
+      writeFileSync(join(cacheDir, "2.0.0", "SKILL.md"), "new");
+
+      invalidatePluginCache("forge-core");
+
+      expect(existsSync(cacheDir)).toBe(false);
+    });
+
+    it("handles missing installed_plugins.json gracefully", () => {
+      expect(() => invalidatePluginCache("forge-core")).not.toThrow();
+    });
+
+    it("handles missing cache directory gracefully", () => {
+      writeFileSync(
+        testInstalledPluginsPath,
+        JSON.stringify({
+          plugins: { "forge-core@reumbra": { installPath: "/old" } },
+        }),
+      );
+      // No cache dir exists — should not throw
+      expect(() => invalidatePluginCache("forge-core")).not.toThrow();
+      const data = JSON.parse(readFileSync(testInstalledPluginsPath, "utf-8"));
+      expect(data.plugins["forge-core@reumbra"]).toBeUndefined();
+    });
+
+    it("does not crash on corrupt JSON in installed_plugins.json", () => {
+      writeFileSync(testInstalledPluginsPath, "not valid json{{{");
+      expect(() => invalidatePluginCache("forge-core")).not.toThrow();
     });
   });
 });

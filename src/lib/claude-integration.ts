@@ -1,6 +1,12 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
-import { claudeKnownMarketplacesPath, claudeSettingsPath, MARKETPLACE_DIR } from "./paths.js";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import {
+  claudeInstalledPluginsPath,
+  claudeKnownMarketplacesPath,
+  claudePluginCacheDir,
+  claudeSettingsPath,
+  MARKETPLACE_DIR,
+} from "./paths.js";
 
 const MARKETPLACE_NAME = "reumbra";
 
@@ -66,6 +72,37 @@ export function isPluginEnabled(pluginName: string): boolean {
   const data = readJsonSafe<Record<string, unknown>>(filePath, {});
   const enabled = data.enabledPlugins as Record<string, boolean> | undefined;
   return enabled?.[`${pluginName}@${MARKETPLACE_NAME}`] === true;
+}
+
+// --- cache invalidation ---
+
+/**
+ * Remove stale plugin data from Claude Code's internal cache.
+ *
+ * After `forge install/update`, the marketplace has the new version, but
+ * Claude Code may still load the old version from its cache. This function:
+ *  1. Removes the plugin entry from `installed_plugins.json` so Claude Code
+ *     treats the plugin as newly enabled on next restart.
+ *  2. Deletes all cached version directories under `cache/reumbra/<plugin>/`
+ *     so Claude Code re-copies from the updated marketplace.
+ */
+export function invalidatePluginCache(pluginName: string): void {
+  // 1. Remove entry from installed_plugins.json
+  const installedPath = claudeInstalledPluginsPath();
+  if (existsSync(installedPath)) {
+    const data = readJsonSafe<Record<string, unknown>>(installedPath, {});
+    const plugins = data.plugins as Record<string, unknown> | undefined;
+    if (plugins) {
+      delete plugins[`${pluginName}@${MARKETPLACE_NAME}`];
+      writeJsonSafe(installedPath, data);
+    }
+  }
+
+  // 2. Remove cached version directories
+  const cacheDir = join(claudePluginCacheDir(), MARKETPLACE_NAME, pluginName);
+  if (existsSync(cacheDir)) {
+    rmSync(cacheDir, { recursive: true, force: true });
+  }
 }
 
 // --- JSON helpers ---

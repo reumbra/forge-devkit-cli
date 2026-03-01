@@ -1,7 +1,11 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { ApiError, apiRequest, downloadFile } from "../lib/api.js";
-import { enablePlugin, registerMarketplace } from "../lib/claude-integration.js";
+import {
+  enablePlugin,
+  invalidatePluginCache,
+  registerMarketplace,
+} from "../lib/claude-integration.js";
 import { loadConfig, saveConfig } from "../lib/config.js";
 import { log } from "../lib/logger.js";
 import {
@@ -83,6 +87,9 @@ export async function install(pluginName: string, version?: string): Promise<voi
 
     // Enable plugin in Claude Code settings
     enablePlugin(fullName);
+
+    // Clear stale Claude Code cache so next restart picks up new version
+    invalidatePluginCache(fullName);
 
     // Update config
     config.installed_plugins[fullName] = {

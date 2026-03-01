@@ -27,3 +27,13 @@ export function claudeSettingsPath(): string {
 export function claudeKnownMarketplacesPath(): string {
   return join(homedir(), ".claude", "plugins", "known_marketplaces.json");
 }
+
+/** Claude Code installed_plugins.json */
+export function claudeInstalledPluginsPath(): string {
+  return join(homedir(), ".claude", "plugins", "installed_plugins.json");
+}
+
+/** Claude Code plugin cache directory (~/.claude/plugins/cache/) */
+export function claudePluginCacheDir(): string {
+  return join(homedir(), ".claude", "plugins", "cache");
+}
