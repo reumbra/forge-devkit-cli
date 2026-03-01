@@ -89,6 +89,7 @@ Three tests confirmed the approach works end-to-end:
 ~/.claude/
 ├── settings.json                    → enabledPlugins += "forge-core@reumbra": true
 └── plugins/
+    ├── forge-core/                  → DELETE stale "active copy" on install/update (highest loading priority)
     ├── known_marketplaces.json      → += "reumbra" entry (source: "directory")
     ├── installed_plugins.json       → DELETE stale entries on install/update (invalidatePluginCache)
     └── cache/reumbra/               → DELETE plugin cache dirs on install/update (invalidatePluginCache)

@@ -68,7 +68,7 @@ forge doctor                      → Local diagnostics only (no API)
 
 - `pnpm dev -- <command>` — run CLI in dev mode (tsx)
 - `pnpm build` — TypeScript → dist/
-- `pnpm test` — vitest (161 tests, 22 suites)
+- `pnpm test` — vitest (163 tests, 22 suites)
 - `pnpm check` — Biome lint + format
 - `node bin/forge.js` — run built CLI directly
 
@@ -97,26 +97,35 @@ Forge uses a **local marketplace** approach. Understanding Claude Code's interna
 | `~/.claude/settings.json` → `enabledPlugins` | Write `"forge-core@reumbra": true` | Claude Code auto-installs enabled plugins from registered marketplaces on restart |
 | `~/.claude/plugins/installed_plugins.json` | **Delete** stale entries | Claude Code ignores externally-created entries but loads from stale ones |
 | `~/.claude/plugins/cache/reumbra/<plugin>/` | **Delete** on update | Forces Claude Code to re-copy from marketplace |
+| `~/.claude/plugins/<plugin>/` | **Delete** stale "active copy" | Highest priority — Claude Code loads this over cache if it exists |
 
-### Key Behaviors (experimentally verified)
+### Claude Code Plugin Loading Priority (experimentally verified)
+
+Claude Code loads plugins in this order. If a higher-priority source exists, lower ones are ignored:
+
+1. **Active copy** `~/.claude/plugins/<name>/` — loaded directly, never checked for staleness
+2. **Cache** `~/.claude/plugins/cache/<marketplace>/<name>/<version>/` — used if no active copy
+3. **Marketplace** — source for auto-install into cache on restart
+
+### Key Behaviors
 
 - `installed_plugins.json` writes are **ignored** — Claude Code re-validates on startup. DO NOT create entries.
 - `cache/` writes are **overwritten** — Claude Code copies from marketplace to cache on install. DO NOT pre-populate.
-- **But stale entries cause problems:** if `installed_plugins.json` has an entry with `installPath` pointing to an old cached version, Claude Code loads that instead of re-installing from marketplace. Solution: `invalidatePluginCache()` deletes the entry + cache dir.
-- Auto-install on restart works — Claude Code detects enabled plugins in registered marketplaces and installs them.
+- **Stale active copy is the main problem:** if `~/.claude/plugins/<name>/` exists with an old version, Claude Code uses it forever and never checks cache/marketplace for updates. `invalidatePluginCache()` deletes all three layers.
+- Auto-install on restart works — Claude Code detects enabled plugins in registered marketplaces and installs them (if no active copy blocks it).
 
 ### Implementation: `src/lib/claude-integration.ts`
 
 - `registerMarketplace()` — write marketplace to `known_marketplaces.json`
 - `enablePlugin()` / `disablePlugin()` — toggle in `settings.json`
-- `invalidatePluginCache()` — remove stale `installed_plugins.json` entry + clear `cache/reumbra/<plugin>/`
+- `invalidatePluginCache()` — remove stale active copy + `installed_plugins.json` entry + `cache/reumbra/<plugin>/`
 - All JSON ops are merge (read → modify → write), never full overwrite
 
 ## Gotchas
 
 - ZIP extraction uses `createInflateRaw()` not `createUnzip()` — ZIP method 8 is raw deflate without zlib header
 - Biome schema version must match installed CLI version — run `pnpm biome migrate --write` after upgrades
-- **Stale plugin cache:** After `forge update`, Claude Code may load old version from `~/.claude/plugins/cache/`. Fix: `invalidatePluginCache()` runs automatically during install/update
+- **Stale plugin active copy:** After `forge update`, Claude Code may load old version from `~/.claude/plugins/<name>/` (active copy takes priority over cache). Fix: `invalidatePluginCache()` deletes active copy, cache, and installed_plugins.json entry during install/update
 
 ## CLI Architecture
 

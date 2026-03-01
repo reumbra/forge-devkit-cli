@@ -4,6 +4,7 @@ import {
   claudeInstalledPluginsPath,
   claudeKnownMarketplacesPath,
   claudePluginCacheDir,
+  claudePluginDir,
   claudeSettingsPath,
   MARKETPLACE_DIR,
 } from "./paths.js";
@@ -77,14 +78,18 @@ export function isPluginEnabled(pluginName: string): boolean {
 // --- cache invalidation ---
 
 /**
- * Remove stale plugin data from Claude Code's internal cache.
+ * Remove stale plugin data from Claude Code's internal state.
  *
  * After `forge install/update`, the marketplace has the new version, but
- * Claude Code may still load the old version from its cache. This function:
+ * Claude Code may still load the old version. This function clears all
+ * three layers of Claude Code's plugin state:
  *  1. Removes the plugin entry from `installed_plugins.json` so Claude Code
  *     treats the plugin as newly enabled on next restart.
- *  2. Deletes all cached version directories under `cache/reumbra/<plugin>/`
+ *  2. Deletes cached version directories under `cache/reumbra/<plugin>/`
  *     so Claude Code re-copies from the updated marketplace.
+ *  3. Deletes the "active copy" at `~/.claude/plugins/<plugin>/` which
+ *     takes priority over cache — without this, Claude Code loads the
+ *     stale active copy and never checks cache for newer versions.
  */
 export function invalidatePluginCache(pluginName: string): void {
   // 1. Remove entry from installed_plugins.json
@@ -102,6 +107,12 @@ export function invalidatePluginCache(pluginName: string): void {
   const cacheDir = join(claudePluginCacheDir(), MARKETPLACE_NAME, pluginName);
   if (existsSync(cacheDir)) {
     rmSync(cacheDir, { recursive: true, force: true });
+  }
+
+  // 3. Remove stale "active copy" (highest priority in Claude Code's loading)
+  const activeCopy = join(claudePluginDir(), pluginName);
+  if (existsSync(activeCopy)) {
+    rmSync(activeCopy, { recursive: true, force: true });
   }
 }
 

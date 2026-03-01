@@ -196,5 +196,28 @@ describe("claude-integration", () => {
       writeFileSync(testInstalledPluginsPath, "not valid json{{{");
       expect(() => invalidatePluginCache("forge-core")).not.toThrow();
     });
+
+    it("removes stale active copy from plugins directory", () => {
+      const activeCopy = join(testClaudeDir, "plugins", "forge-core");
+      mkdirSync(join(activeCopy, ".claude-plugin"), { recursive: true });
+      writeFileSync(
+        join(activeCopy, ".claude-plugin", "plugin.json"),
+        JSON.stringify({ name: "forge-core", version: "3.0.0" }),
+      );
+
+      invalidatePluginCache("forge-core");
+
+      expect(existsSync(activeCopy)).toBe(false);
+    });
+
+    it("does not remove unrelated directories in plugins/", () => {
+      const otherPlugin = join(testClaudeDir, "plugins", "other-plugin");
+      mkdirSync(otherPlugin, { recursive: true });
+      writeFileSync(join(otherPlugin, "SKILL.md"), "keep me");
+
+      invalidatePluginCache("forge-core");
+
+      expect(existsSync(otherPlugin)).toBe(true);
+    });
   });
 });
