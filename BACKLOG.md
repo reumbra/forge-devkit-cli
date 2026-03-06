@@ -79,3 +79,22 @@
 - [ ] `npx @reumbra/forge` support
 - [ ] Changelog generation
 - [ ] `forge self-update` (or defer to npm)
+
+## Phase 6: GDPR Compliance [epic:gdpr]
+
+> Local data protection. CLI stores license key + machine ID + email in plaintext.
+
+### Secure Storage
+- [ ] Replace plaintext `~/.forge/config.json` with OS keychain (node `keytar` or `@aspect-build/rules_js` keychain)
+- [ ] Fallback: encrypted config with machine-derived key (for headless/CI environments)
+- [ ] Stop caching email from API response (fetch fresh on `forge account`, don't persist)
+
+### Privacy & Transparency
+- [ ] `forge privacy` command — display link to Privacy Policy + summary of data collected
+- [ ] `forge export` command — dump config + installed plugins as JSON (Right to Portability)
+- [ ] `forge delete-account` command — call API `DELETE /velvet/auth/delete-account`, then clear local config
+- [ ] Show privacy policy link during `forge activate` (first interaction)
+
+### Data Minimization
+- [ ] Audit: do we need to send machine_id on every request? Consider session token after activation
+- [ ] `forge deactivate` — confirm it triggers server-side machine removal (verify current behavior)
