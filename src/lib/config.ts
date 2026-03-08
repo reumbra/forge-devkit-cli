@@ -1,8 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
 import type { ForgeConfig } from "../types.js";
 import { getMachineId } from "./machine-id.js";
-import { CONFIG_PATH, FORGE_DIR } from "./paths.js";
+import { CONFIG_PATH, FORGE_DIR, LEGACY_FORGE_DIR, MARKETPLACE_DIR } from "./paths.js";
 
 const DEFAULT_API_URL = "https://api.reumbra.com/velvet";
 
@@ -15,7 +22,37 @@ function defaultConfig(): ForgeConfig {
   };
 }
 
+/**
+ * One-time migration from legacy ~/.forge/ to OS-standard paths.
+ * Moves config.json and marketplace dir, then removes legacy dir.
+ */
+function migrateFromLegacy(): void {
+  if (!existsSync(LEGACY_FORGE_DIR) || existsSync(CONFIG_PATH)) return;
+
+  const legacyConfig = join(LEGACY_FORGE_DIR, "config.json");
+  const legacyMarketplace = join(LEGACY_FORGE_DIR, "marketplace");
+
+  mkdirSync(FORGE_DIR, { recursive: true });
+
+  if (existsSync(legacyConfig)) {
+    cpSync(legacyConfig, CONFIG_PATH);
+  }
+
+  if (existsSync(legacyMarketplace) && !existsSync(MARKETPLACE_DIR)) {
+    cpSync(legacyMarketplace, MARKETPLACE_DIR, { recursive: true });
+  }
+
+  // Clean up legacy dir
+  try {
+    rmSync(LEGACY_FORGE_DIR, { recursive: true });
+  } catch {
+    // Best-effort cleanup — don't fail if dir is locked
+  }
+}
+
 export function loadConfig(): ForgeConfig {
+  migrateFromLegacy();
+
   if (!existsSync(CONFIG_PATH)) {
     return defaultConfig();
   }

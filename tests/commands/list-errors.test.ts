@@ -10,6 +10,7 @@ const testConfigPath = join(testForgeDir, "config.json");
 
 vi.mock("../../src/lib/paths.js", () => ({
   FORGE_DIR: testForgeDir,
+  LEGACY_FORGE_DIR: "/tmp/no-legacy-forge",
   CONFIG_PATH: testConfigPath,
   CACHE_DIR: join(testForgeDir, "cache"),
   claudePluginDir: () => join(testDir, "plugins"),

@@ -105,7 +105,7 @@ export async function install(pluginName: string, version?: string): Promise<voi
     if (err instanceof ApiError) {
       if (err.code === "PLUGIN_NOT_IN_PLAN") {
         log.error(`${fullName} is not available on your plan.`);
-        log.info("Upgrade at https://reumbra.dev/forge/pricing");
+        log.info("Upgrade at https://forge.reumbra.com/pricing");
       } else if (err.code === "VERSION_NOT_FOUND") {
         log.error(`Version ${version} not found for ${fullName}.`);
       } else if (err.code === "LICENSE_INACTIVE") {

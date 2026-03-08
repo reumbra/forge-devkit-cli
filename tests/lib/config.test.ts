@@ -10,6 +10,7 @@ const testConfigPath = join(testDir, "config.json");
 
 vi.mock("../../src/lib/paths.js", () => ({
   FORGE_DIR: testDir,
+  LEGACY_FORGE_DIR: "/tmp/no-legacy-forge",
   CONFIG_PATH: testConfigPath,
   CACHE_DIR: join(testDir, "cache"),
   claudePluginDir: () => join(testDir, "plugins"),
@@ -30,7 +31,7 @@ describe("config", () => {
     it("returns defaults when no config exists", () => {
       const config = loadConfig();
       expect(config.license_key).toBeNull();
-      expect(config.machine_id).toMatch(/^[0-9a-f]{32}$/);
+      expect(config.machine_id).toMatch(/^[0-9a-f]{64}$/);
       expect(config.api_url).toBe("https://api.reumbra.com/velvet");
       expect(config.installed_plugins).toEqual({});
     });
@@ -58,7 +59,7 @@ describe("config", () => {
 
       const config = loadConfig();
       expect(config.license_key).toBe("FRG-PART-IALC-ONFG");
-      expect(config.machine_id).toMatch(/^[0-9a-f]{32}$/);
+      expect(config.machine_id).toMatch(/^[0-9a-f]{64}$/);
       expect(config.installed_plugins).toEqual({});
     });
 

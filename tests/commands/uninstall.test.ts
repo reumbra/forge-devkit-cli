@@ -16,6 +16,7 @@ const testKnownMpPath = join(testClaudeDir, "plugins", "known_marketplaces.json"
 
 vi.mock("../../src/lib/paths.js", () => ({
   FORGE_DIR: testForgeDir,
+  LEGACY_FORGE_DIR: "/tmp/no-legacy-forge",
   CONFIG_PATH: testConfigPath,
   CACHE_DIR: testCacheDir,
   MARKETPLACE_DIR: testMarketplaceDir,

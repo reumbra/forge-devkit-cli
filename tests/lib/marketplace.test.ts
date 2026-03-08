@@ -10,6 +10,7 @@ const testMarketplaceDir = join(testDir, "marketplace");
 vi.mock("../../src/lib/paths.js", () => ({
   MARKETPLACE_DIR: testMarketplaceDir,
   FORGE_DIR: testDir,
+  LEGACY_FORGE_DIR: "/tmp/no-legacy-forge",
   CONFIG_PATH: join(testDir, "config.json"),
   CACHE_DIR: join(testDir, "cache"),
   claudePluginDir: () => join(testDir, ".claude", "plugins"),

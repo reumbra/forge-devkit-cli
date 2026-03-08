@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Mock paths to avoid real config reads inside getVersion → package.json
 vi.mock("../../src/lib/paths.js", () => ({
   FORGE_DIR: "/tmp/forge-test",
+  LEGACY_FORGE_DIR: "/tmp/no-legacy-forge",
   CONFIG_PATH: "/tmp/forge-test/config.json",
   CACHE_DIR: "/tmp/forge-test/cache",
   claudePluginDir: () => "/tmp/forge-test/plugins",

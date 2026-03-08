@@ -8,13 +8,24 @@ import {
   MARKETPLACE_DIR,
 } from "../../src/lib/paths.js";
 
+function expectedConfigDir(): string {
+  switch (process.platform) {
+    case "win32":
+      return join(process.env.APPDATA || join(homedir(), "AppData", "Roaming"), "forge-devkit");
+    case "darwin":
+      return join(homedir(), "Library", "Application Support", "forge-devkit");
+    default:
+      return join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "forge-devkit");
+  }
+}
+
 describe("paths", () => {
-  it("FORGE_DIR points to ~/.forge", () => {
-    expect(FORGE_DIR).toBe(join(homedir(), ".forge"));
+  it("FORGE_DIR points to OS-standard config dir", () => {
+    expect(FORGE_DIR).toBe(expectedConfigDir());
   });
 
-  it("MARKETPLACE_DIR points to ~/.forge/marketplace", () => {
-    expect(MARKETPLACE_DIR).toBe(join(homedir(), ".forge", "marketplace"));
+  it("MARKETPLACE_DIR is under config dir", () => {
+    expect(MARKETPLACE_DIR).toBe(join(expectedConfigDir(), "marketplace"));
   });
 
   it("claudeSettingsPath returns ~/.claude/settings.json", () => {
