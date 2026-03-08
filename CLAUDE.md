@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Ecosystem Contract
+
+**Single source of truth** for cross-repo contracts (API, file paths, machine ID, install flow): `forge-devkit-api/docs/forge-ecosystem-contract.md`
+
+When changing paths, API contracts, or install mechanics — update the contract document first, then implement in each repo.
+
 ## Project Overview
 
 **@reumbra/forge** — public npm CLI for installing and managing commercial Forge plugins for Claude Code. Part of the Forge DevKit ecosystem by Reumbra.
