@@ -17,8 +17,7 @@ export function registerMarketplace(): void {
   const filePath = claudeKnownMarketplacesPath();
   const data = readJsonSafe<Record<string, unknown>>(filePath, {});
 
-  if (data[MARKETPLACE_NAME]) return; // already registered
-
+  // Always update — path may have changed (e.g. legacy ~/.forge → OS-standard)
   data[MARKETPLACE_NAME] = {
     source: {
       source: "directory",
