@@ -30,7 +30,7 @@ export interface ActivateResponse {
 
 export interface PluginInfo {
   name: string;
-  current_version: string;
+  current_version: string | null;
   description: string;
 }
 

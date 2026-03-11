@@ -134,11 +134,12 @@ describe("list — error scenarios", () => {
 
     const output = logs.join("\n");
     expect(output).toContain("forge-core");
-    expect(output).toContain("forge-product");
+    // forge-product has null version — filtered out (not yet published)
+    expect(output).not.toContain("forge-product");
     expect(output).toContain("up to date");
   });
 
-  it("shows dash for null version", async () => {
+  it("filters out plugins with null version (not yet published)", async () => {
     writeConfig();
     const logs: string[] = [];
     vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
@@ -156,6 +157,7 @@ describe("list — error scenarios", () => {
     await list();
 
     const output = logs.join("\n");
-    expect(output).not.toContain("vnull");
+    // Null-version plugins are filtered — result is empty list
+    expect(output).not.toContain("forge-core");
   });
 });

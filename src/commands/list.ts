@@ -10,7 +10,8 @@ export async function fetchPluginList(config: ForgeConfig): Promise<PluginInfo[]
     method: "GET",
     path: "/plugins/list",
   });
-  return result.plugins;
+  // Skip plugins without a published version (seeded but not yet released)
+  return result.plugins.filter((p) => p.current_version);
 }
 
 /** Render a plugin table to stdout. Returns the rows data for reuse. */
