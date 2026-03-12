@@ -146,13 +146,19 @@ describe("install — error scenarios", () => {
 
   it("normalizes shorthand name before API call", async () => {
     writeConfig();
-    mockFetch.mockResolvedValue(apiError(404, "PLUGIN_NOT_FOUND", "Plugin not found"));
+    // First call: list plugins (for name resolution) — no exact match for "core"
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ plugins: [] }),
+    });
+    // Second call: download with resolved name → 404
+    mockFetch.mockResolvedValueOnce(apiError(404, "PLUGIN_NOT_FOUND", "Plugin not found"));
 
     await expect(install("core")).rejects.toThrow("process.exit");
 
-    // Verify the API was called with the full name
-    const fetchCall = mockFetch.mock.calls[0];
-    const body = JSON.parse(fetchCall[1].body);
+    // Verify the download API was called with the full name (second fetch call)
+    const downloadCall = mockFetch.mock.calls[1];
+    const body = JSON.parse(downloadCall[1].body);
     expect(body.plugin_name).toBe("forge-core");
   });
 });

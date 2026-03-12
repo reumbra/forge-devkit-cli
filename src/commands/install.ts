@@ -20,6 +20,26 @@ import { extractZip } from "../lib/zip.js";
 import type { DownloadResponse } from "../types.js";
 import { fetchPluginList } from "./list.js";
 
+async function resolvePluginName(config: ReturnType<typeof loadConfig>, input: string): Promise<string> {
+  // Known product prefixes — use as-is
+  if (input.startsWith("forge-") || input.startsWith("lumina-")) {
+    return input;
+  }
+
+  // Check if exact name exists in available plugins
+  try {
+    const plugins = await fetchPluginList(config);
+    if (plugins.some((p) => p.name === input)) {
+      return input;
+    }
+  } catch {
+    // If list fails, fall through to shorthand
+  }
+
+  // Shorthand: "core" → "forge-core"
+  return `forge-${input}`;
+}
+
 export async function install(pluginName: string, version?: string): Promise<void> {
   const config = loadConfig();
 
@@ -28,8 +48,9 @@ export async function install(pluginName: string, version?: string): Promise<voi
     process.exit(1);
   }
 
-  // Normalize plugin name (allow shorthand: "core" → "forge-core")
-  const fullName = pluginName.startsWith("forge-") ? pluginName : `forge-${pluginName}`;
+  // Normalize plugin name: try exact match first, then forge-* shorthand
+  // This handles: "forge-core" (exact), "lumina-hub" (exact), "skill-forge" (exact), "core" → "forge-core"
+  const fullName = await resolvePluginName(config, pluginName);
   const versionLabel = version ? `@${version}` : "";
 
   const spinner = createSpinner(`Requesting ${bold}${fullName}${reset}${versionLabel}...`);
