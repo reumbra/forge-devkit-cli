@@ -82,7 +82,7 @@ forge doctor                      → Local diagnostics only (no API)
 
 - **Biome 2.4** — double quotes, sorted imports, 2-space indent, 100 char line width
 - No non-null assertions (`!`) — use `as T` cast in tests
-- Plugin name normalization: shorthand "core" → "forge-core" (prefix `forge-` if missing)
+- Plugin name normalization: known prefixes (`forge-`, `lumina-`) pass through; unknown names checked against API plugin list; shorthand fallback adds `forge-` prefix ("core" → "forge-core")
 
 ## Testing
 
@@ -158,10 +158,13 @@ Claude Code loads plugins in this order. If a higher-priority source exists, low
 - **npm:** `@reumbra/forge` (public scoped package, npmjs.com)
 - **Install:** `npm install -g @reumbra/forge`
 - **CI:** GitHub Actions on push to main — build → lint → test
-- **Publish:** push a version tag → GH Actions → npm publish
+- **Publish:** bump version in `package.json` manually, commit, tag, push tag → GH Actions → npm publish
   ```bash
-  npm version patch    # bumps version + creates git tag
-  git push --follow-tags  # triggers publish workflow
+  # 1. Bump version in package.json
+  # 2. Commit changes
+  # 3. Tag and push:
+  git tag v<version>
+  git push origin v<version>
   ```
 - **NPM_TOKEN:** stored in GH repo secrets (granular access token)
 - **Gotcha:** CI must build before test — CLI integration tests spawn `node bin/forge.js` which needs `dist/`
