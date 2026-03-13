@@ -110,8 +110,8 @@ async function executeAction(action: Action): Promise<void> {
         message: "Enter your license key:",
         placeholder: "FRG-XXXX-XXXX-XXXX",
         validate: (v) => {
-          if (!v || !/^FRG-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(v)) {
-            return "Invalid format. Expected: FRG-XXXX-XXXX-XXXX";
+          if (!v || v.length < 5) {
+            return "License key is too short.";
           }
         },
       });

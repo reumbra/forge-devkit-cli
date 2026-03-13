@@ -129,10 +129,10 @@ describe("activate — API error scenarios", () => {
     expect(config.license_key).toBe("FRG-TEST-ABCD-EF23");
   });
 
-  it("rejects invalid key format before API call", async () => {
+  it("rejects too-short key before API call", async () => {
     writeConfig();
 
-    await expect(activate("INVALID-KEY")).rejects.toThrow("process.exit");
+    await expect(activate("AB")).rejects.toThrow("process.exit");
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });

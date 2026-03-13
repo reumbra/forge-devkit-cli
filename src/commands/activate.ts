@@ -6,8 +6,8 @@ import { box, createSpinner, statusBadge } from "../lib/ui.js";
 import type { ActivateResponse } from "../types.js";
 
 export async function activate(licenseKey: string): Promise<void> {
-  if (!/^FRG-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(licenseKey)) {
-    log.error("Invalid license key format. Expected: FRG-XXXX-XXXX-XXXX");
+  if (!licenseKey || licenseKey.length < 5) {
+    log.error("License key is too short.");
     process.exit(1);
   }
 
